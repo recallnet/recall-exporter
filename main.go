@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/gochain/web3"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/lmittmann/tint"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v2"
@@ -23,7 +23,7 @@ const (
 	FLAG_SUBNET_BALANCE_CHECK_INTERVAL       = "subnet-balance-check-interval"
 )
 
-var parentChainRpcClient web3.Client
+var parentChainRpcClient *ethclient.Client
 
 func main() {
 	app := cli.App{
@@ -71,6 +71,12 @@ func main() {
 						Usage: "How often the balance on the subnet must be checked",
 						Value: time.Minute,
 					},
+					&cli.StringFlag{
+						Name:     FLAG_PARENT_CHAIN_PRIVATE_KEY,
+						Usage:    "Private key to call the parent chain from",
+						EnvVars:  []string{"PARENT_CHAIN_PRIVATE_KEY"},
+						Required: true,
+					},
 				},
 			},
 		},
@@ -86,7 +92,7 @@ func main() {
 }
 
 func commandRun(ctx *cli.Context) error {
-	client, err := web3.Dial(ctx.String(FLAG_PARENT_CHAIN_RPC_URL))
+	client, err := ethclient.Dial(ctx.String(FLAG_PARENT_CHAIN_RPC_URL))
 	if err != nil {
 		return fmt.Errorf("failed to dial RPC URL: %w", err)
 	}
