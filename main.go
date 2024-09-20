@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/lmittmann/tint"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -17,13 +18,16 @@ const (
 	FLAG_METRICS_ADDRESS                     = "metrics-address"
 	FLAG_METRICS_PATH                        = "metrics-path"
 	FLAG_PARENT_CHAIN_RPC_URL                = "parent-chain-rpc-url"
-	FLAG_PARENT_CHAIN_ADDRESS                = "parent-chain-address"
+	FLAG_VALIDATOR_ADDRESS                   = "validator-address"
 	FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL = "parent-chain-balance-check-interval"
-	FLAG_SUBNET_ADDRESS                      = "subnet-address"
+	FLAG_SUBNET_RPC_URL                      = "subnet-rpc-url"
 	FLAG_SUBNET_BALANCE_CHECK_INTERVAL       = "subnet-balance-check-interval"
 )
 
-var parentChainRpcClient *ethclient.Client
+var (
+	parentChainRpcClient *ethclient.Client
+	subnetRpcClient      *ethclient.Client
+)
 
 func main() {
 	app := cli.App{
@@ -50,9 +54,9 @@ func main() {
 						Required: true,
 					},
 					&cli.StringFlag{
-						Name:     FLAG_PARENT_CHAIN_ADDRESS,
-						Usage:    "Parent chain address",
-						EnvVars:  []string{"PARENT_CHAIN_ADDRESS"},
+						Name:     FLAG_VALIDATOR_ADDRESS,
+						Usage:    "Validator address",
+						EnvVars:  []string{"VALIDATOR_ADDRESS"},
 						Required: true,
 					},
 					&cli.DurationFlag{
@@ -61,21 +65,14 @@ func main() {
 						Value: time.Minute,
 					},
 					&cli.StringFlag{
-						Name:     FLAG_SUBNET_ADDRESS,
-						Usage:    "Subnet address",
-						EnvVars:  []string{"SUBNET_ADDRESS"},
-						Required: true,
+						Name:    FLAG_SUBNET_RPC_URL,
+						Usage:   "Subnet RPC URL",
+						EnvVars: []string{"SUBNET_RPC_URL"},
 					},
 					&cli.DurationFlag{
 						Name:  FLAG_SUBNET_BALANCE_CHECK_INTERVAL,
 						Usage: "How often the balance on the subnet must be checked",
 						Value: time.Minute,
-					},
-					&cli.StringFlag{
-						Name:     FLAG_PARENT_CHAIN_PRIVATE_KEY,
-						Usage:    "Private key to call the parent chain from",
-						EnvVars:  []string{"PARENT_CHAIN_PRIVATE_KEY"},
-						Required: true,
 					},
 				},
 			},
@@ -92,13 +89,13 @@ func main() {
 }
 
 func commandRun(ctx *cli.Context) error {
-	client, err := ethclient.Dial(ctx.String(FLAG_PARENT_CHAIN_RPC_URL))
-	if err != nil {
-		return fmt.Errorf("failed to dial RPC URL: %w", err)
+	if err := setupRpcClients(ctx); err != nil {
+		return err
 	}
-	parentChainRpcClient = client
 
-	go runParentChainBalanceChecker(ctx.String(FLAG_PARENT_CHAIN_ADDRESS), ctx.Duration(FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL))
+	validatorAddress := common.HexToAddress(ctx.String(FLAG_VALIDATOR_ADDRESS))
+	go runBalanceChecker(parentChainRpcClient, validatorAddress, "parent", ctx.Duration(FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL))
+	go runBalanceChecker(subnetRpcClient, validatorAddress, "subnet", ctx.Duration(FLAG_SUBNET_BALANCE_CHECK_INTERVAL))
 
 	metricsAddress := ctx.String(FLAG_METRICS_ADDRESS)
 	metricsPath := ctx.String(FLAG_METRICS_PATH)
@@ -107,4 +104,24 @@ func commandRun(ctx *cli.Context) error {
 
 	http.Handle(metricsPath, promhttp.Handler())
 	return http.ListenAndServe(metricsAddress, nil)
+}
+
+func setupRpcClients(ctx *cli.Context) error {
+	rpcUrl := ctx.String(FLAG_PARENT_CHAIN_RPC_URL)
+	client, err := ethclient.Dial(rpcUrl)
+	if err != nil {
+		return fmt.Errorf("failed to dial RPC URL %s: %w", rpcUrl, err)
+	}
+	parentChainRpcClient = client
+
+	rpcUrl = ctx.String(FLAG_SUBNET_RPC_URL)
+	if rpcUrl != "" {
+		client, err = ethclient.Dial(rpcUrl)
+		if err != nil {
+			return fmt.Errorf("failed to dial RPC URL %s: %w", rpcUrl, err)
+		}
+		subnetRpcClient = client
+	}
+
+	return nil
 }
