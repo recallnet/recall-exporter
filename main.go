@@ -60,9 +60,10 @@ func main() {
 						Required: true,
 					},
 					&cli.DurationFlag{
-						Name:  FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL,
-						Usage: "How often the balance on the parent chain must be checked",
-						Value: time.Minute,
+						Name:    FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL,
+						Usage:   "How often the balance on the parent chain must be checked",
+						Value:   time.Minute,
+						EnvVars: []string{"PARENT_CHAIN_BALANCE_CHECK_INTERVAL"},
 					},
 					&cli.StringFlag{
 						Name:    FLAG_SUBNET_RPC_URL,
@@ -70,9 +71,10 @@ func main() {
 						EnvVars: []string{"SUBNET_RPC_URL"},
 					},
 					&cli.DurationFlag{
-						Name:  FLAG_SUBNET_BALANCE_CHECK_INTERVAL,
-						Usage: "How often the balance on the subnet must be checked",
-						Value: time.Minute,
+						Name:    FLAG_SUBNET_BALANCE_CHECK_INTERVAL,
+						Usage:   "How often the balance on the subnet must be checked",
+						Value:   time.Minute,
+						EnvVars: []string{"SUBNET_BALANCE_CHECK_INTERVAL"},
 					},
 				},
 			},
