@@ -29,8 +29,14 @@ var (
 	subnetRpcClient      *ethclient.Client
 )
 
+var (
+	GitCommit string
+	BuildTime string
+)
+
 func main() {
 	app := cli.App{
+		Version: GitCommit,
 		Commands: []*cli.Command{
 			{
 				Name:   "run",
@@ -38,9 +44,10 @@ func main() {
 				Action: commandRun,
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:  FLAG_METRICS_ADDRESS,
-						Usage: "Address to expose metrics on",
-						Value: "localhost:9010",
+						Name:    FLAG_METRICS_ADDRESS,
+						Usage:   "Address to expose metrics on",
+						Value:   "localhost:9010",
+						EnvVars: []string{"METRICS_ADDRESS"},
 					},
 					&cli.StringFlag{
 						Name:  FLAG_METRICS_PATH,
@@ -91,6 +98,7 @@ func main() {
 }
 
 func commandRun(ctx *cli.Context) error {
+	slog.Info("running hoku-exporter", "git-commit", GitCommit, "build-time", BuildTime)
 	if err := setupRpcClients(ctx); err != nil {
 		return err
 	}

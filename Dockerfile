@@ -1,8 +1,10 @@
 FROM golang:1.23-alpine as builder
 
+ARG GIT_COMMIT_SHA="none"
+
 COPY . .
 RUN pwd
-RUN go build
+RUN go build -ldflags "-X main.GitCommit=${GIT_COMMIT_SHA} -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 FROM alpine
 
