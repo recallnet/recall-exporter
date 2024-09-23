@@ -97,7 +97,8 @@ func main() {
 	}
 
 	slog.SetDefault(slog.New(tint.NewHandler(os.Stderr, &tint.Options{
-		Level: slog.LevelDebug,
+		Level:      slog.LevelDebug,
+		TimeFormat: time.RFC3339,
 	})))
 
 	if err := app.Run(os.Args); err != nil {
