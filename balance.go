@@ -13,12 +13,13 @@ import (
 
 const (
 	PROM_LABEL_CHAIN_NAME = "chain_name"
+	PROM_LABEL_ADDRESS    = "addr"
 )
 
 var (
 	parentChainBalance = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "validator_balance",
-	}, []string{PROM_LABEL_CHAIN_NAME})
+	}, []string{PROM_LABEL_CHAIN_NAME, PROM_LABEL_ADDRESS})
 )
 
 func runBalanceChecker(client *ethclient.Client, addressToCheck common.Address, chainName string, interval time.Duration) {
@@ -29,7 +30,7 @@ func runBalanceChecker(client *ethclient.Client, addressToCheck common.Address, 
 			logger.Error("failed to get balance", "error", err)
 		} else {
 			logger.Debug("got balance", "balance", balance)
-			parentChainBalance.WithLabelValues(chainName).Set(weiToPromEth(balance))
+			parentChainBalance.WithLabelValues(chainName, addressToCheck.Hex()).Set(weiToPromEth(balance))
 		}
 
 		logger.Debug("sleeping", "duration", interval)
