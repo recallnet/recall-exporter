@@ -23,11 +23,6 @@ var (
 
 func runBalanceChecker(client *ethclient.Client, addressToCheck common.Address, chainName string, interval time.Duration) {
 	logger := slog.With("chain", chainName)
-	if client == nil {
-		logger.Warn("client is not configured -> balance will not be checked")
-		return
-	}
-
 	for {
 		balance, err := client.BalanceAt(context.Background(), addressToCheck, nil)
 		if err != nil {
