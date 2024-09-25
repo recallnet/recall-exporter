@@ -28,11 +28,6 @@ const (
 )
 
 var (
-	parentChainRpcClient *ethclient.Client
-	subnetRpcClient      *ethclient.Client
-)
-
-var (
 	GitCommit string
 	BuildTime string
 )
@@ -96,11 +91,7 @@ func main() {
 		},
 	}
 
-	slog.SetDefault(slog.New(tint.NewHandler(os.Stderr, &tint.Options{
-		Level:      slog.LevelDebug,
-		TimeFormat: time.RFC3339,
-	})))
-
+	setupLogging()
 	if err := app.Run(os.Args); err != nil {
 		slog.Error("Failed to run app", "error", err)
 	}
@@ -134,6 +125,22 @@ func commandRun(ctx *cli.Context) error {
 
 	http.Handle(metricsPath, promhttp.Handler())
 	return http.ListenAndServe(metricsAddress, nil)
+}
+
+func setupLogging() {
+	val, valSet := os.LookupEnv("GO_LOG")
+	logLevel := slog.LevelInfo
+	var err error
+	if valSet {
+		err = logLevel.UnmarshalText([]byte(val))
+	}
+	slog.SetDefault(slog.New(tint.NewHandler(os.Stderr, &tint.Options{
+		Level:      logLevel,
+		TimeFormat: time.RFC3339,
+	})))
+	if err != nil {
+		slog.Warn("invalid GO_LOG value, ", "GO_LOG", val, "error", err)
+	}
 }
 
 func connectToParentChainRpcEndpoint(ctx *cli.Context, rpcUrl string) (*ethclient.Client, error) {
