@@ -21,9 +21,11 @@ const (
 	FLAG_METRICS_PATH                        = "metrics-path"
 	FLAG_PARENT_CHAIN_RPC_URL                = "parent-chain-rpc-url"
 	FLAG_PARENT_CHAIN_RPC_BEARER_TOKEN       = "parent-chain-rpc-bearer-token"
-	FLAG_VALIDATOR_ADDRESS                   = "validator-address"
 	FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL = "parent-chain-balance-check-interval"
+	FLAG_PARENT_CHAIN_NETWORK_NAME           = "parent-chain-network-name"
+	FLAG_VALIDATOR_ADDRESS                   = "validator-address"
 	FLAG_SUBNET_RPC_URL                      = "subnet-rpc-url"
+	FLAG_SUBNET_NETWORK_NAME                 = "subnet-network-name"
 	FLAG_SUBNET_BALANCE_CHECK_INTERVAL       = "subnet-balance-check-interval"
 )
 
@@ -63,12 +65,6 @@ func main() {
 						Usage:   "Parent chain RPC bearer token",
 						EnvVars: []string{"PARENT_CHAIN_RPC_BEARER_TOKEN"},
 					},
-					&cli.StringFlag{
-						Name:     FLAG_VALIDATOR_ADDRESS,
-						Usage:    "Validator address",
-						EnvVars:  []string{"VALIDATOR_ADDRESS"},
-						Required: true,
-					},
 					&cli.DurationFlag{
 						Name:    FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL,
 						Usage:   "How often the balance on the parent chain must be checked",
@@ -76,9 +72,27 @@ func main() {
 						EnvVars: []string{"PARENT_CHAIN_BALANCE_CHECK_INTERVAL"},
 					},
 					&cli.StringFlag{
+						Name:    FLAG_PARENT_CHAIN_NETWORK_NAME,
+						Usage:   "Parent chain network name",
+						EnvVars: []string{"PARENT_CHAIN_NETWORK_NAME"},
+						Value:   "parent",
+					},
+					&cli.StringFlag{
+						Name:     FLAG_VALIDATOR_ADDRESS,
+						Usage:    "Validator address",
+						EnvVars:  []string{"VALIDATOR_ADDRESS"},
+						Required: true,
+					},
+					&cli.StringFlag{
 						Name:    FLAG_SUBNET_RPC_URL,
 						Usage:   "Subnet RPC URL",
 						EnvVars: []string{"SUBNET_RPC_URL"},
+					},
+					&cli.StringFlag{
+						Name:    FLAG_SUBNET_NETWORK_NAME,
+						Usage:   "Subnet RPC network name",
+						EnvVars: []string{"SUBNET_RPC_NETWORK_NAME"},
+						Value:   "subnet",
 					},
 					&cli.DurationFlag{
 						Name:    FLAG_SUBNET_BALANCE_CHECK_INTERVAL,
@@ -105,7 +119,11 @@ func commandRun(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	go runBalanceChecker(parentChainRpcClient, validatorAddress, "parent", ctx.Duration(FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL))
+	go runBalanceChecker(
+		parentChainRpcClient,
+		validatorAddress,
+		ctx.String(FLAG_PARENT_CHAIN_NETWORK_NAME),
+		ctx.Duration(FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL))
 
 	subnetRpcUrl := ctx.String(FLAG_SUBNET_RPC_URL)
 	if subnetRpcUrl == "" {
@@ -115,7 +133,11 @@ func commandRun(ctx *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		go runBalanceChecker(subnetRpcClient, validatorAddress, "subnet", ctx.Duration(FLAG_SUBNET_BALANCE_CHECK_INTERVAL))
+		go runBalanceChecker(
+			subnetRpcClient,
+			validatorAddress,
+			ctx.String(FLAG_SUBNET_NETWORK_NAME),
+			ctx.Duration(FLAG_SUBNET_BALANCE_CHECK_INTERVAL))
 	}
 
 	metricsAddress := ctx.String(FLAG_METRICS_ADDRESS)
