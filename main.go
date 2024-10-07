@@ -1,16 +1,11 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/lmittmann/tint"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v2"
@@ -27,6 +22,8 @@ const (
 	FLAG_SUBNET_RPC_URL                      = "subnet-rpc-url"
 	FLAG_SUBNET_NETWORK_NAME                 = "subnet-network-name"
 	FLAG_SUBNET_BALANCE_CHECK_INTERVAL       = "subnet-balance-check-interval"
+	FLAG_SUBNET_GATEWAY_ADDRESS              = "subnet-gateway-address"
+	FLAG_SUBNET_MEMBERSHIP_CHECK_INTERVAL    = "subnet-gateway-check-interval"
 )
 
 var (
@@ -100,6 +97,18 @@ func main() {
 						Value:   time.Minute,
 						EnvVars: []string{"SUBNET_BALANCE_CHECK_INTERVAL"},
 					},
+					&cli.StringFlag{
+						Name:     FLAG_SUBNET_GATEWAY_ADDRESS,
+						Usage:    "Subnet gateway address",
+						EnvVars:  []string{"SUBNET_GATEWAY_ADDRESS"},
+						Required: true,
+					},
+					&cli.DurationFlag{
+						Name:    FLAG_SUBNET_MEMBERSHIP_CHECK_INTERVAL,
+						Usage:   "Subnet membership check interval",
+						Value:   time.Minute,
+						EnvVars: []string{"SUBNET_MEMBERSHIP_CHECK_INTERVAL"},
+					},
 				},
 			},
 		},
@@ -113,31 +122,15 @@ func main() {
 
 func commandRun(ctx *cli.Context) error {
 	slog.Info("running hoku-exporter", "git-commit", GitCommit, "build-time", BuildTime)
-	validatorAddress := common.HexToAddress(ctx.String(FLAG_VALIDATOR_ADDRESS))
 
-	parentChainRpcClient, err := connectToParentChainRpcEndpoint(ctx, ctx.String(FLAG_PARENT_CHAIN_RPC_URL))
+	err := startParentChainJobs(ctx)
 	if err != nil {
 		return err
 	}
-	go runBalanceChecker(
-		parentChainRpcClient,
-		validatorAddress,
-		ctx.String(FLAG_PARENT_CHAIN_NETWORK_NAME),
-		ctx.Duration(FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL))
 
-	subnetRpcUrl := ctx.String(FLAG_SUBNET_RPC_URL)
-	if subnetRpcUrl == "" {
-		slog.Warn("Subnet RPC URL is not configured.")
-	} else {
-		subnetRpcClient, err := connectToSubnetRpcEndpoint(subnetRpcUrl)
-		if err != nil {
-			return err
-		}
-		go runBalanceChecker(
-			subnetRpcClient,
-			validatorAddress,
-			ctx.String(FLAG_SUBNET_NETWORK_NAME),
-			ctx.Duration(FLAG_SUBNET_BALANCE_CHECK_INTERVAL))
+	err = startSubnetJobs(ctx)
+	if err != nil {
+		return err
 	}
 
 	metricsAddress := ctx.String(FLAG_METRICS_ADDRESS)
@@ -163,29 +156,4 @@ func setupLogging() {
 	if err != nil {
 		slog.Warn("invalid GO_LOG value, ", "GO_LOG", val, "error", err)
 	}
-}
-
-func connectToParentChainRpcEndpoint(ctx *cli.Context, rpcUrl string) (*ethclient.Client, error) {
-	rpcOptions := []rpc.ClientOption{}
-	rpcToken := ctx.String(FLAG_PARENT_CHAIN_RPC_BEARER_TOKEN)
-	if rpcToken != "" {
-		slog.Debug("Setting bearer token for the parent chain RPC endpoint.")
-		rpcOptions = append(rpcOptions, rpc.WithHeader("Authorization", "Bearer "+rpcToken))
-	}
-	rpcClient, err := rpc.DialOptions(context.Background(), rpcUrl, rpcOptions...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to dial RPC URL %s: %w", rpcUrl, err)
-	}
-	client := ethclient.NewClient(rpcClient)
-	slog.Info("connected to parent chain RPC URL", "url", rpcUrl)
-	return client, nil
-}
-
-func connectToSubnetRpcEndpoint(rpcUrl string) (*ethclient.Client, error) {
-	client, err := ethclient.Dial(rpcUrl)
-	if err != nil {
-		return nil, fmt.Errorf("failed to dial RPC URL %s: %w", rpcUrl, err)
-	}
-	slog.Info("connected to subnet RPC URL", "url", rpcUrl)
-	return client, nil
 }
