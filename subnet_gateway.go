@@ -10,7 +10,7 @@ import (
 func runMembershipChecker(ep *Endpoint, sleep time.Duration) {
 	logger := ep.Logger.With("checker", "membership")
 	gaugeMember := promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name:        "subnet_validator",
+		Name:        "subnet_validator_weight",
 		ConstLabels: ep.Labels,
 	}, []string{PROM_LABEL_ADDRESS})
 
@@ -32,7 +32,8 @@ func runMembershipChecker(ep *Endpoint, sleep time.Duration) {
 				logger.Info("add new member", "addr", addr)
 			}
 			knownMembers[addr] = currentRunIteration
-			gaugeMember.WithLabelValues(addr).Set(1)
+			weight, _ := validator.Weight.Float64()
+			gaugeMember.WithLabelValues(addr).Set(weight)
 		}
 
 		// Delete old validators
