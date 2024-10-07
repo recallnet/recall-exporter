@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/hokunet/hoku-exporter/gateway"
+	"github.com/hokunet/hoku-exporter/contracts/gateway"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/urfave/cli/v2"
 )

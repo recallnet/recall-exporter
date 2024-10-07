@@ -16,6 +16,6 @@ forge inspect contracts/gateway/GatewayGetterFacet.sol:GatewayGetterFacet abi > 
 ```
 3. Generate code
 ```sh
-abigen --abi=./abi/GatewayGetterFacet.abi --pkg=gateway --out=gateway/gateway.go
+abigen --abi=./abi/GatewayGetterFacet.abi --pkg=gateway --out=contracts/gateway/gateway.go
 ```
 For details see https://goethereumbook.org/smart-contract-compile/
