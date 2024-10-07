@@ -9,15 +9,25 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/hokunet/hoku-exporter/contracts/gateway"
+	"github.com/hokunet/hoku-exporter/contracts/subnet"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/urfave/cli/v2"
 )
 
 type Endpoint struct {
-	Client        *ethclient.Client
-	Logger        *slog.Logger
-	Labels        prometheus.Labels
+	Client *ethclient.Client
+	Logger *slog.Logger
+	Labels prometheus.Labels
+}
+
+type SubnetEndpoint struct {
+	*Endpoint
 	GatewayCaller *gateway.GatewayCaller
+}
+
+type ParentChainEndpoint struct {
+	*Endpoint
+	SubnetCaller *subnet.SubnetCaller
 }
 
 func connectToRpcEndpoint(rpcUrl, token, networkName string) (*Endpoint, error) {
@@ -62,10 +72,16 @@ func startParentChainJobs(ctx *cli.Context) error {
 		return err
 	}
 
-	go runBalanceChecker(
-		ep,
-		validatorAddress,
-		ctx.Duration(FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL))
+	parentChainEp := &ParentChainEndpoint{Endpoint: ep}
+
+	subnetContractAddress := common.HexToAddress(ctx.String(FLAG_PARENT_CHAIN_SUBNET_CONTRACT_ADDRESS))
+	parentChainEp.SubnetCaller, err = subnet.NewSubnetCaller(subnetContractAddress, ep.Client)
+	if err != nil {
+		return fmt.Errorf("failed to create SubnetCaller: %w", err)
+	}
+
+	go runBalanceChecker(ep, validatorAddress, ctx.Duration(FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL))
+	go runBottomupCheckpointChecker(parentChainEp, validatorAddress, ctx.Duration(FLAG_PARENT_CHAIN_BOTTOMUP_CHECKPOINT_CHECK_INTERVAL))
 
 	return nil
 }
@@ -83,8 +99,10 @@ func startSubnetJobs(ctx *cli.Context) error {
 		return err
 	}
 
+	subnetEp := &SubnetEndpoint{Endpoint: ep}
+
 	gwAddress := common.HexToAddress(ctx.String(FLAG_SUBNET_GATEWAY_ADDRESS))
-	ep.GatewayCaller, err = gateway.NewGatewayCaller(gwAddress, ep.Client)
+	subnetEp.GatewayCaller, err = gateway.NewGatewayCaller(gwAddress, ep.Client)
 	if err != nil {
 		return fmt.Errorf("failed to create subnet gateway caller: %w", err)
 	}
@@ -93,6 +111,6 @@ func startSubnetJobs(ctx *cli.Context) error {
 		ep,
 		validatorAddress,
 		ctx.Duration(FLAG_SUBNET_BALANCE_CHECK_INTERVAL))
-	go runMembershipChecker(ep, ctx.Duration(FLAG_SUBNET_MEMBERSHIP_CHECK_INTERVAL))
+	go runMembershipChecker(subnetEp, ctx.Duration(FLAG_SUBNET_MEMBERSHIP_CHECK_INTERVAL))
 	return nil
 }

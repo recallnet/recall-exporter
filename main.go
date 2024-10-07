@@ -12,18 +12,20 @@ import (
 )
 
 const (
-	FLAG_METRICS_ADDRESS                     = "metrics-address"
-	FLAG_METRICS_PATH                        = "metrics-path"
-	FLAG_PARENT_CHAIN_RPC_URL                = "parent-chain-rpc-url"
-	FLAG_PARENT_CHAIN_RPC_BEARER_TOKEN       = "parent-chain-rpc-bearer-token"
-	FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL = "parent-chain-balance-check-interval"
-	FLAG_PARENT_CHAIN_NETWORK_NAME           = "parent-chain-network-name"
-	FLAG_VALIDATOR_ADDRESS                   = "validator-address"
-	FLAG_SUBNET_RPC_URL                      = "subnet-rpc-url"
-	FLAG_SUBNET_NETWORK_NAME                 = "subnet-network-name"
-	FLAG_SUBNET_BALANCE_CHECK_INTERVAL       = "subnet-balance-check-interval"
-	FLAG_SUBNET_GATEWAY_ADDRESS              = "subnet-gateway-address"
-	FLAG_SUBNET_MEMBERSHIP_CHECK_INTERVAL    = "subnet-gateway-check-interval"
+	FLAG_METRICS_ADDRESS                                 = "metrics-address"
+	FLAG_METRICS_PATH                                    = "metrics-path"
+	FLAG_PARENT_CHAIN_RPC_URL                            = "parent-chain-rpc-url"
+	FLAG_PARENT_CHAIN_RPC_BEARER_TOKEN                   = "parent-chain-rpc-bearer-token"
+	FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL             = "parent-chain-balance-check-interval"
+	FLAG_PARENT_CHAIN_NETWORK_NAME                       = "parent-chain-network-name"
+	FLAG_PARENT_CHAIN_SUBNET_CONTRACT_ADDRESS            = "parent-chain-subnet-contract-address"
+	FLAG_PARENT_CHAIN_BOTTOMUP_CHECKPOINT_CHECK_INTERVAL = "parent-chain-bottomup-checkpoint-check-interval"
+	FLAG_VALIDATOR_ADDRESS                               = "validator-address"
+	FLAG_SUBNET_RPC_URL                                  = "subnet-rpc-url"
+	FLAG_SUBNET_NETWORK_NAME                             = "subnet-network-name"
+	FLAG_SUBNET_BALANCE_CHECK_INTERVAL                   = "subnet-balance-check-interval"
+	FLAG_SUBNET_GATEWAY_ADDRESS                          = "subnet-gateway-address"
+	FLAG_SUBNET_MEMBERSHIP_CHECK_INTERVAL                = "subnet-gateway-check-interval"
 )
 
 var (
@@ -73,6 +75,18 @@ func main() {
 						Usage:   "Parent chain network name",
 						EnvVars: []string{"PARENT_CHAIN_NETWORK_NAME"},
 						Value:   "parent",
+					},
+					&cli.StringFlag{
+						Name:     FLAG_PARENT_CHAIN_SUBNET_CONTRACT_ADDRESS,
+						Usage:    "Parent chain subnet contract address",
+						EnvVars:  []string{"PARENT_CHAIN_SUBNET_CONTRACT_ADDRESS"},
+						Required: true,
+					},
+					&cli.DurationFlag{
+						Name:    FLAG_PARENT_CHAIN_BOTTOMUP_CHECKPOINT_CHECK_INTERVAL,
+						Usage:   "How often the bottomup checkpoint must be checked",
+						Value:   time.Minute,
+						EnvVars: []string{"PARENT_CHAIN_BOTTOMUP_CHECKPOINT_CHECK_INTERVAL"},
 					},
 					&cli.StringFlag{
 						Name:     FLAG_VALIDATOR_ADDRESS,

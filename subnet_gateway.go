@@ -7,7 +7,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-func runMembershipChecker(ep *Endpoint, sleep time.Duration) {
+func runMembershipChecker(ep *SubnetEndpoint, sleep time.Duration) {
 	logger := ep.Logger.With("checker", "membership")
 	gaugeMember := promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name:        "subnet_validator_weight",
