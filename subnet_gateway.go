@@ -15,10 +15,10 @@ func runMembershipChecker(ep *Endpoint, sleep time.Duration) {
 	}, []string{PROM_LABEL_ADDRESS})
 
 	knownMembers := map[string]int{}
-	run := 0
+	currentRunIteration := 0
 
 	for {
-		run++
+		currentRunIteration++
 
 		ms, err := ep.GatewayCaller.GetCurrentMembership(nil)
 		if err != nil {
@@ -31,13 +31,13 @@ func runMembershipChecker(ep *Endpoint, sleep time.Duration) {
 			if knownMembers[addr] == 0 {
 				logger.Info("add new member", "addr", addr)
 			}
-			knownMembers[addr] = run
+			knownMembers[addr] = currentRunIteration
 			gaugeMember.WithLabelValues(addr).Set(1)
 		}
 
 		// Delete old validators
-		for validatorAddress, r := range knownMembers {
-			if r < run {
+		for validatorAddress, lastSeenAtRunIteration := range knownMembers {
+			if lastSeenAtRunIteration < currentRunIteration {
 				// This is an old validator that we should remove from the metric set.
 				gaugeMember.DeleteLabelValues(validatorAddress)
 				delete(knownMembers, validatorAddress)
