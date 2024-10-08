@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/lmittmann/tint"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v2"
@@ -137,15 +138,18 @@ func main() {
 func commandRun(ctx *cli.Context) error {
 	slog.Info("running hoku-exporter", "git-commit", GitCommit, "build-time", BuildTime)
 
-	err := startParentChainJobs(ctx)
+	subnetEP, err := newSubnetEndpoint(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = startSubnetJobs(ctx)
+	parentChainEP, err := newParentChainEndpoint(ctx)
 	if err != nil {
 		return err
 	}
+
+	startSubnetJobs(subnetEP, ctx)
+	startParentChainJobs(parentChainEP, ctx)
 
 	metricsAddress := ctx.String(FLAG_METRICS_ADDRESS)
 	metricsPath := ctx.String(FLAG_METRICS_PATH)
@@ -170,4 +174,22 @@ func setupLogging() {
 	if err != nil {
 		slog.Warn("invalid GO_LOG value, ", "GO_LOG", val, "error", err)
 	}
+}
+
+func validatorAddress(ctx *cli.Context) common.Address {
+	return common.HexToAddress(ctx.String(FLAG_VALIDATOR_ADDRESS))
+}
+
+func startSubnetJobs(ep *SubnetEndpoint, ctx *cli.Context) {
+	logger := slog.With("network", ctx.String(FLAG_SUBNET_NETWORK_NAME))
+	logger.Info("starting jobs")
+	StartJob("balance", newBalanceCheckerJob(ep.Endpoint, validatorAddress(ctx)), ctx.Duration(FLAG_SUBNET_BALANCE_CHECK_INTERVAL), logger)
+	StartJob("membership", newMembershipChecker(ep), ctx.Duration(FLAG_SUBNET_MEMBERSHIP_CHECK_INTERVAL), logger)
+}
+
+func startParentChainJobs(ep *ParentChainEndpoint, ctx *cli.Context) {
+	logger := slog.With("network", ctx.String(FLAG_PARENT_CHAIN_NETWORK_NAME))
+	logger.Info("starting jobs")
+	StartJob("balance", newBalanceCheckerJob(ep.Endpoint, validatorAddress(ctx)), ctx.Duration(FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL), logger)
+	StartJob("bottomup-checkpoint", newBottomupCheckpointChecker(ep), ctx.Duration(FLAG_PARENT_CHAIN_BOTTOMUP_CHECKPOINT_CHECK_INTERVAL), logger)
 }

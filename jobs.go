@@ -1,131 +1,14 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
-	"maps"
 	"runtime/debug"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/hokunet/hoku-exporter/contracts/gateway"
-	"github.com/hokunet/hoku-exporter/contracts/subnet"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/urfave/cli/v2"
 )
-
-type Endpoint struct {
-	Client *ethclient.Client
-	labels prometheus.Labels
-}
-
-// Labels takes keyVal pairs and returns prometheus Labels
-func (e *Endpoint) Labels(keyVal ...string) prometheus.Labels {
-	labels := maps.Clone(e.labels)
-	for i := 0; i < len(keyVal); i += 2 {
-		labels[keyVal[i]] = keyVal[i+1]
-	}
-	return labels
-}
-
-type SubnetEndpoint struct {
-	*Endpoint
-	GatewayCaller *gateway.GatewayCaller
-}
-
-type ParentChainEndpoint struct {
-	*Endpoint
-	SubnetCaller *subnet.SubnetCaller
-}
-
-func connectToRpcEndpoint(rpcUrl, token, networkName string) (*Endpoint, error) {
-	rpcOptions := []rpc.ClientOption{}
-	if token != "" {
-		slog.Debug("Setting bearer token for the parent chain RPC endpoint.")
-		rpcOptions = append(rpcOptions, rpc.WithHeader("Authorization", "Bearer "+token))
-	}
-	rpcClient, err := rpc.DialOptions(context.Background(), rpcUrl, rpcOptions...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to dial RPC URL %s: %w", rpcUrl, err)
-	}
-	client := ethclient.NewClient(rpcClient)
-	slog.Info("connected to RPC endpoint", "url", rpcUrl)
-
-	chainId, err := client.ChainID(context.Background())
-	if err != nil {
-		return nil, fmt.Errorf("failed to get chain ID for network %s: %w", networkName, err)
-	}
-
-	labels := prometheus.Labels{}
-	labels[PROM_LABEL_NETWORK_NAME] = networkName
-	labels[PROM_LABEL_CHAIN_ID] = chainId.String()
-
-	return &Endpoint{
-		Client: client,
-		labels: labels,
-	}, nil
-}
-
-func startParentChainJobs(ctx *cli.Context) error {
-	validatorAddress := common.HexToAddress(ctx.String(FLAG_VALIDATOR_ADDRESS))
-	networkName := ctx.String(FLAG_PARENT_CHAIN_NETWORK_NAME)
-	ep, err := connectToRpcEndpoint(
-		ctx.String(FLAG_PARENT_CHAIN_RPC_URL),
-		ctx.String(FLAG_PARENT_CHAIN_RPC_BEARER_TOKEN),
-		networkName)
-	if err != nil {
-		return err
-	}
-
-	parentChainEp := &ParentChainEndpoint{Endpoint: ep}
-
-	subnetContractAddress := common.HexToAddress(ctx.String(FLAG_PARENT_CHAIN_SUBNET_CONTRACT_ADDRESS))
-	parentChainEp.SubnetCaller, err = subnet.NewSubnetCaller(subnetContractAddress, ep.Client)
-	if err != nil {
-		return fmt.Errorf("failed to create SubnetCaller: %w", err)
-	}
-
-	logger := slog.With("network", networkName)
-
-	StartJob("balance", newBalanceCheckerJob(ep, validatorAddress), ctx.Duration(FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL), logger)
-	StartJob("bottomup-checkpoint", newBottomupCheckpointChecker(parentChainEp), ctx.Duration(FLAG_PARENT_CHAIN_BOTTOMUP_CHECKPOINT_CHECK_INTERVAL), logger)
-
-	return nil
-}
-
-func startSubnetJobs(ctx *cli.Context) error {
-	validatorAddress := common.HexToAddress(ctx.String(FLAG_VALIDATOR_ADDRESS))
-	subnetRpcUrl := ctx.String(FLAG_SUBNET_RPC_URL)
-	if subnetRpcUrl == "" {
-		slog.Warn("Subnet RPC URL is not configured.")
-		return nil
-	}
-
-	networkName := ctx.String(FLAG_SUBNET_NETWORK_NAME)
-
-	ep, err := connectToRpcEndpoint(subnetRpcUrl, "", networkName)
-	if err != nil {
-		return err
-	}
-
-	subnetEp := &SubnetEndpoint{Endpoint: ep}
-	logger := slog.With("network", networkName)
-
-	gwAddress := common.HexToAddress(ctx.String(FLAG_SUBNET_GATEWAY_ADDRESS))
-	subnetEp.GatewayCaller, err = gateway.NewGatewayCaller(gwAddress, ep.Client)
-	if err != nil {
-		return fmt.Errorf("failed to create subnet gateway caller: %w", err)
-	}
-
-	StartJob("balance", newBalanceCheckerJob(ep, validatorAddress), ctx.Duration(FLAG_SUBNET_BALANCE_CHECK_INTERVAL), logger)
-	StartJob("membership", newMembershipChecker(subnetEp), ctx.Duration(FLAG_SUBNET_MEMBERSHIP_CHECK_INTERVAL), logger)
-
-	return nil
-}
 
 const (
 	PROM_LABEL_JOB_NAME   = "job"
