@@ -55,18 +55,14 @@ func connectToRpcEndpoint(rpcUrl, token, networkName string) (*Endpoint, error) 
 	client := ethclient.NewClient(rpcClient)
 	slog.Info("connected to RPC endpoint", "url", rpcUrl)
 
-	// TODO: retry if it is not possible to get the chain ID.
 	chainId, err := client.ChainID(context.Background())
-	var chainIdStr string
-	if err == nil {
-		chainIdStr = chainId.String()
-	} else {
-		slog.Error("failed to get chain ID", "error", err)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get chain ID for network %s: %w", networkName, err)
 	}
 
 	labels := prometheus.Labels{}
 	labels[PROM_LABEL_NETWORK_NAME] = networkName
-	labels[PROM_LABEL_CHAIN_ID] = chainIdStr
+	labels[PROM_LABEL_CHAIN_ID] = chainId.String()
 
 	return &Endpoint{
 		Client: client,
