@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
 	"runtime/debug"
 	"time"
 
@@ -19,7 +20,16 @@ import (
 
 type Endpoint struct {
 	Client *ethclient.Client
-	Labels prometheus.Labels
+	labels prometheus.Labels
+}
+
+// Labels takes keyVal pairs and returns prometheus Labels
+func (e *Endpoint) Labels(keyVal ...string) prometheus.Labels {
+	labels := maps.Clone(e.labels)
+	for i := 0; i < len(keyVal); i += 2 {
+		labels[keyVal[i]] = keyVal[i+1]
+	}
+	return labels
 }
 
 type SubnetEndpoint struct {
@@ -60,7 +70,7 @@ func connectToRpcEndpoint(rpcUrl, token, networkName string) (*Endpoint, error) 
 
 	return &Endpoint{
 		Client: client,
-		Labels: labels,
+		labels: labels,
 	}, nil
 }
 
@@ -86,7 +96,7 @@ func startParentChainJobs(ctx *cli.Context) error {
 	logger := slog.With("network", networkName)
 
 	StartJob("balance", newBalanceCheckerJob(ep, validatorAddress), ctx.Duration(FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL), logger)
-	StartJob("bottomup-checkpoint", newBottomupCheckpointChecker(parentChainEp, validatorAddress), ctx.Duration(FLAG_PARENT_CHAIN_BOTTOMUP_CHECKPOINT_CHECK_INTERVAL), logger)
+	StartJob("bottomup-checkpoint", newBottomupCheckpointChecker(parentChainEp), ctx.Duration(FLAG_PARENT_CHAIN_BOTTOMUP_CHECKPOINT_CHECK_INTERVAL), logger)
 
 	return nil
 }

@@ -11,7 +11,7 @@ import (
 func newMembershipChecker(ep *SubnetEndpoint) JobFunc {
 	gaugeMember := promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name:        "subnet_validator_weight",
-		ConstLabels: ep.Labels,
+		ConstLabels: ep.Labels(),
 	}, []string{PROM_LABEL_ADDRESS})
 
 	knownMembers := map[string]int{}

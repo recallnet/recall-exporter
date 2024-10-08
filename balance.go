@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"maps"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
@@ -18,12 +17,9 @@ const (
 )
 
 func newBalanceCheckerJob(ep *Endpoint, addressToCheck common.Address) JobFunc {
-	labels := maps.Clone(ep.Labels)
-	labels[PROM_LABEL_ADDRESS] = addressToCheck.Hex()
-
 	gaugeBalance := promauto.NewGauge(prometheus.GaugeOpts{
 		Name:        "validator_balance",
-		ConstLabels: labels,
+		ConstLabels: ep.Labels(PROM_LABEL_ADDRESS, addressToCheck.Hex()),
 	})
 
 	return func(logger *slog.Logger) error {

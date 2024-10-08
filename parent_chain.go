@@ -3,20 +3,15 @@ package main
 import (
 	"fmt"
 	"log/slog"
-	"maps"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-func newBottomupCheckpointChecker(ep *ParentChainEndpoint, addressToCheck common.Address) JobFunc {
-	labels := maps.Clone(ep.Labels)
-	labels[PROM_LABEL_ADDRESS] = addressToCheck.Hex()
-
+func newBottomupCheckpointChecker(ep *ParentChainEndpoint) JobFunc {
 	checkpointHeight := promauto.NewGauge(prometheus.GaugeOpts{
 		Name:        "last_bottomup_checkpoint_height",
-		ConstLabels: labels,
+		ConstLabels: ep.Labels(),
 	})
 
 	return func(logger *slog.Logger) error {
