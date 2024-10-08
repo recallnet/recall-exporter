@@ -1,14 +1,14 @@
 package main
 
 import (
-	"time"
+	"fmt"
+	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-func runMembershipChecker(ep *SubnetEndpoint, sleep time.Duration) {
-	logger := ep.Logger.With("checker", "membership")
+func newMembershipChecker(ep *SubnetEndpoint) JobFunc {
 	gaugeMember := promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name:        "subnet_validator_weight",
 		ConstLabels: ep.Labels,
@@ -17,12 +17,12 @@ func runMembershipChecker(ep *SubnetEndpoint, sleep time.Duration) {
 	knownMembers := map[string]int{}
 	currentRunIteration := 0
 
-	for {
+	return func(logger *slog.Logger) error {
 		currentRunIteration++
 
 		ms, err := ep.GatewayCaller.GetCurrentMembership(nil)
 		if err != nil {
-			logger.Error("failed to get current membership", "error", err)
+			return fmt.Errorf("failed to get current membership: %w", err)
 		}
 
 		logger.Debug("got members", "count", len(ms.Validators))
@@ -46,7 +46,6 @@ func runMembershipChecker(ep *SubnetEndpoint, sleep time.Duration) {
 			}
 		}
 
-		logger.Debug("sleeping", "duration", sleep)
-		time.Sleep(sleep)
+		return nil
 	}
 }

@@ -2,8 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 	"maps"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
@@ -16,27 +17,24 @@ const (
 	PROM_LABEL_ADDRESS      = "addr"
 )
 
-func runBalanceChecker(ep *Endpoint, addressToCheck common.Address, interval time.Duration) {
+func newBalanceCheckerJob(ep *Endpoint, addressToCheck common.Address) JobFunc {
 	labels := maps.Clone(ep.Labels)
 	labels[PROM_LABEL_ADDRESS] = addressToCheck.Hex()
-
-	logger := ep.Logger.With("checker", "balance")
 
 	gaugeBalance := promauto.NewGauge(prometheus.GaugeOpts{
 		Name:        "validator_balance",
 		ConstLabels: labels,
 	})
-	for {
+
+	return func(logger *slog.Logger) error {
 		balance, err := ep.Client.BalanceAt(context.Background(), addressToCheck, nil)
 		if err != nil {
-			logger.Error("failed to get balance", "error", err)
+			return fmt.Errorf("failed to get balance: %w", err)
 		} else {
 			logger.Debug("got balance", "balance", balance)
 			val, _ := balance.Float64()
 			gaugeBalance.Set(val)
 		}
-
-		logger.Debug("sleeping", "duration", interval)
-		time.Sleep(interval)
+		return nil
 	}
 }

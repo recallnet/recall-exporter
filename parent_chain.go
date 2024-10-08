@@ -1,17 +1,16 @@
 package main
 
 import (
+	"fmt"
+	"log/slog"
 	"maps"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-func runBottomupCheckpointChecker(ep *ParentChainEndpoint, addressToCheck common.Address, interval time.Duration) {
-	logger := ep.Logger.With("checker", "bottomup-checkpoint")
-
+func newBottomupCheckpointChecker(ep *ParentChainEndpoint, addressToCheck common.Address) JobFunc {
 	labels := maps.Clone(ep.Labels)
 	labels[PROM_LABEL_ADDRESS] = addressToCheck.Hex()
 
@@ -20,18 +19,16 @@ func runBottomupCheckpointChecker(ep *ParentChainEndpoint, addressToCheck common
 		ConstLabels: labels,
 	})
 
-	for {
+	return func(logger *slog.Logger) error {
 		height, err := ep.SubnetCaller.LastBottomUpCheckpointHeight(nil)
 		if err != nil {
-			logger.Error("failed to get last bottomup checkpoint height", "error", err)
+			return fmt.Errorf("failed to get last bottomup checkpoint height: %w", err)
 		}
 
 		heightF, _ := height.Float64()
 		checkpointHeight.Set(heightF)
 		logger.Debug("got last bottomup checkpoint", "height", heightF)
 
-		logger.Debug("sleeping", "duration", interval)
-		time.Sleep(interval)
+		return nil
 	}
-
 }
