@@ -20,7 +20,7 @@ func newBalanceCheckerJob(ep *Endpoint, addressToCheck common.Address) JobFunc {
 	gaugeBalance := promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace:   PROM_NAMESPACE_HOKU,
 		Name:        "validator_balance",
-		ConstLabels: ep.Labels(PROM_LABEL_ADDRESS, addressToCheck.Hex()),
+		ConstLabels: ep.ConstLabels(PROM_LABEL_ADDRESS, addressToCheck.Hex()),
 	})
 
 	return func(logger *slog.Logger) error {

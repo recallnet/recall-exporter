@@ -48,8 +48,8 @@ func newEndpoint(rpcUrl, token, networkName string) (*Endpoint, error) {
 	}, nil
 }
 
-// Labels takes keyVal pairs and returns prometheus Labels
-func (e *Endpoint) Labels(keyVal ...string) prometheus.Labels {
+// ConstLabels takes keyVal pairs and returns prometheus ConstLabels
+func (e *Endpoint) ConstLabels(keyVal ...string) prometheus.Labels {
 	labels := maps.Clone(e.labels)
 	for i := 0; i < len(keyVal); i += 2 {
 		labels[keyVal[i]] = keyVal[i+1]
