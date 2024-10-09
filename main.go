@@ -6,24 +6,27 @@ import (
 	"os"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/lmittmann/tint"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v2"
 )
 
 const (
-	FLAG_METRICS_ADDRESS                     = "metrics-address"
-	FLAG_METRICS_PATH                        = "metrics-path"
-	FLAG_PARENT_CHAIN_RPC_URL                = "parent-chain-rpc-url"
-	FLAG_PARENT_CHAIN_RPC_BEARER_TOKEN       = "parent-chain-rpc-bearer-token"
-	FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL = "parent-chain-balance-check-interval"
-	FLAG_PARENT_CHAIN_NETWORK_NAME           = "parent-chain-network-name"
-	FLAG_VALIDATOR_ADDRESS                   = "validator-address"
-	FLAG_SUBNET_RPC_URL                      = "subnet-rpc-url"
-	FLAG_SUBNET_NETWORK_NAME                 = "subnet-network-name"
-	FLAG_SUBNET_BALANCE_CHECK_INTERVAL       = "subnet-balance-check-interval"
-	FLAG_SUBNET_GATEWAY_ADDRESS              = "subnet-gateway-address"
-	FLAG_SUBNET_MEMBERSHIP_CHECK_INTERVAL    = "subnet-gateway-check-interval"
+	FLAG_METRICS_ADDRESS                                 = "metrics-address"
+	FLAG_METRICS_PATH                                    = "metrics-path"
+	FLAG_PARENT_CHAIN_RPC_URL                            = "parent-chain-rpc-url"
+	FLAG_PARENT_CHAIN_RPC_BEARER_TOKEN                   = "parent-chain-rpc-bearer-token"
+	FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL             = "parent-chain-balance-check-interval"
+	FLAG_PARENT_CHAIN_NETWORK_NAME                       = "parent-chain-network-name"
+	FLAG_PARENT_CHAIN_SUBNET_CONTRACT_ADDRESS            = "parent-chain-subnet-contract-address"
+	FLAG_PARENT_CHAIN_BOTTOMUP_CHECKPOINT_CHECK_INTERVAL = "parent-chain-bottomup-checkpoint-check-interval"
+	FLAG_VALIDATOR_ADDRESS                               = "validator-address"
+	FLAG_SUBNET_RPC_URL                                  = "subnet-rpc-url"
+	FLAG_SUBNET_NETWORK_NAME                             = "subnet-network-name"
+	FLAG_SUBNET_BALANCE_CHECK_INTERVAL                   = "subnet-balance-check-interval"
+	FLAG_SUBNET_GATEWAY_ADDRESS                          = "subnet-gateway-address"
+	FLAG_SUBNET_MEMBERSHIP_CHECK_INTERVAL                = "subnet-gateway-check-interval"
 )
 
 var (
@@ -75,6 +78,18 @@ func main() {
 						Value:   "parent",
 					},
 					&cli.StringFlag{
+						Name:     FLAG_PARENT_CHAIN_SUBNET_CONTRACT_ADDRESS,
+						Usage:    "Parent chain subnet contract address",
+						EnvVars:  []string{"PARENT_CHAIN_SUBNET_CONTRACT_ADDRESS"},
+						Required: true,
+					},
+					&cli.DurationFlag{
+						Name:    FLAG_PARENT_CHAIN_BOTTOMUP_CHECKPOINT_CHECK_INTERVAL,
+						Usage:   "How often the bottomup checkpoint must be checked",
+						Value:   time.Minute,
+						EnvVars: []string{"PARENT_CHAIN_BOTTOMUP_CHECKPOINT_CHECK_INTERVAL"},
+					},
+					&cli.StringFlag{
 						Name:     FLAG_VALIDATOR_ADDRESS,
 						Usage:    "Validator address",
 						EnvVars:  []string{"VALIDATOR_ADDRESS"},
@@ -123,15 +138,18 @@ func main() {
 func commandRun(ctx *cli.Context) error {
 	slog.Info("running hoku-exporter", "git-commit", GitCommit, "build-time", BuildTime)
 
-	err := startParentChainJobs(ctx)
+	subnetEP, err := newSubnetEndpoint(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = startSubnetJobs(ctx)
+	parentChainEP, err := newParentChainEndpoint(ctx)
 	if err != nil {
 		return err
 	}
+
+	startSubnetJobs(subnetEP, ctx)
+	startParentChainJobs(parentChainEP, ctx)
 
 	metricsAddress := ctx.String(FLAG_METRICS_ADDRESS)
 	metricsPath := ctx.String(FLAG_METRICS_PATH)
@@ -156,4 +174,20 @@ func setupLogging() {
 	if err != nil {
 		slog.Warn("invalid GO_LOG value, ", "GO_LOG", val, "error", err)
 	}
+}
+
+func validatorAddress(ctx *cli.Context) common.Address {
+	return common.HexToAddress(ctx.String(FLAG_VALIDATOR_ADDRESS))
+}
+
+func startSubnetJobs(ep *SubnetEndpoint, ctx *cli.Context) {
+	network := ctx.String(FLAG_SUBNET_NETWORK_NAME)
+	StartJob("balance", network, newBalanceCheckerJob(ep.Endpoint, validatorAddress(ctx)), ctx.Duration(FLAG_SUBNET_BALANCE_CHECK_INTERVAL))
+	StartJob("membership", network, newMembershipChecker(ep), ctx.Duration(FLAG_SUBNET_MEMBERSHIP_CHECK_INTERVAL))
+}
+
+func startParentChainJobs(ep *ParentChainEndpoint, ctx *cli.Context) {
+	network := ctx.String(FLAG_PARENT_CHAIN_NETWORK_NAME)
+	StartJob("balance", network, newBalanceCheckerJob(ep.Endpoint, validatorAddress(ctx)), ctx.Duration(FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL))
+	StartJob("bottomup-checkpoint", network, newBottomupCheckpointChecker(ep), ctx.Duration(FLAG_PARENT_CHAIN_BOTTOMUP_CHECKPOINT_CHECK_INTERVAL))
 }

@@ -1,98 +1,58 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
+	"runtime/debug"
+	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/hokunet/hoku-exporter/gateway"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/urfave/cli/v2"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-type Endpoint struct {
-	Client        *ethclient.Client
-	Logger        *slog.Logger
-	Labels        prometheus.Labels
-	GatewayCaller *gateway.GatewayCaller
-}
+const (
+	PROM_LABEL_JOB_NAME   = "job"
+	PROM_LABEL_JOB_STATUS = "status"
 
-func connectToRpcEndpoint(rpcUrl, token, networkName string) (*Endpoint, error) {
-	rpcOptions := []rpc.ClientOption{}
-	if token != "" {
-		slog.Debug("Setting bearer token for the parent chain RPC endpoint.")
-		rpcOptions = append(rpcOptions, rpc.WithHeader("Authorization", "Bearer "+token))
+	PROM_NAMESPACE_HOKU = "hoku"
+)
+
+var (
+	counterJobRun = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: PROM_NAMESPACE_HOKU,
+		Name:      "job_run",
+	}, []string{PROM_LABEL_JOB_NAME, PROM_LABEL_NETWORK_NAME, PROM_LABEL_JOB_STATUS})
+)
+
+type JobFunc func(*slog.Logger) error
+
+func StartJob(jobName, network string, job JobFunc, interval time.Duration) {
+	logger := slog.
+		With("job", jobName).
+		With("network", network)
+
+	jobWrapper := func() (err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Error("panic", "reason", r, "stack", debug.Stack())
+				err = fmt.Errorf("panic: %v", r)
+			}
+		}()
+		return job(logger)
 	}
-	rpcClient, err := rpc.DialOptions(context.Background(), rpcUrl, rpcOptions...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to dial RPC URL %s: %w", rpcUrl, err)
-	}
-	client := ethclient.NewClient(rpcClient)
-	slog.Info("connected to RPC endpoint", "url", rpcUrl)
+	go func() {
+		logger.Info("starting job")
+		for {
+			status := "success"
+			err := jobWrapper()
+			if err != nil {
+				logger.Error("failed to run job", "error", err)
+				status = "failure"
+			}
+			counterJobRun.WithLabelValues(jobName, network, status).Inc()
 
-	chainId, err := client.ChainID(context.Background())
-	var chainIdStr string
-	if err == nil {
-		chainIdStr = chainId.String()
-	} else {
-		slog.Error("failed to get chain ID", "error", err)
-	}
-
-	labels := prometheus.Labels{}
-	labels[PROM_LABEL_NETWORK_NAME] = networkName
-	labels[PROM_LABEL_CHAIN_ID] = chainIdStr
-
-	return &Endpoint{
-		Client: client,
-		Logger: slog.With("network", networkName),
-		Labels: labels,
-	}, nil
-}
-
-func startParentChainJobs(ctx *cli.Context) error {
-	validatorAddress := common.HexToAddress(ctx.String(FLAG_VALIDATOR_ADDRESS))
-	ep, err := connectToRpcEndpoint(
-		ctx.String(FLAG_PARENT_CHAIN_RPC_URL),
-		ctx.String(FLAG_PARENT_CHAIN_RPC_BEARER_TOKEN),
-		ctx.String(FLAG_PARENT_CHAIN_NETWORK_NAME))
-	if err != nil {
-		return err
-	}
-
-	go runBalanceChecker(
-		ep,
-		validatorAddress,
-		ctx.Duration(FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL))
-
-	return nil
-}
-
-func startSubnetJobs(ctx *cli.Context) error {
-	validatorAddress := common.HexToAddress(ctx.String(FLAG_VALIDATOR_ADDRESS))
-	subnetRpcUrl := ctx.String(FLAG_SUBNET_RPC_URL)
-	if subnetRpcUrl == "" {
-		slog.Warn("Subnet RPC URL is not configured.")
-		return nil
-	}
-
-	ep, err := connectToRpcEndpoint(subnetRpcUrl, "", ctx.String(FLAG_SUBNET_NETWORK_NAME))
-	if err != nil {
-		return err
-	}
-
-	gwAddress := common.HexToAddress(ctx.String(FLAG_SUBNET_GATEWAY_ADDRESS))
-	ep.GatewayCaller, err = gateway.NewGatewayCaller(gwAddress, ep.Client)
-	if err != nil {
-		return fmt.Errorf("failed to create subnet gateway caller: %w", err)
-	}
-
-	go runBalanceChecker(
-		ep,
-		validatorAddress,
-		ctx.Duration(FLAG_SUBNET_BALANCE_CHECK_INTERVAL))
-	go runMembershipChecker(ep, ctx.Duration(FLAG_SUBNET_MEMBERSHIP_CHECK_INTERVAL))
-	return nil
+			logger.Debug("sleeping", "duration", interval)
+			time.Sleep(interval)
+		}
+	}()
 }
