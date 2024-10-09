@@ -10,6 +10,7 @@ import (
 
 func newBottomupCheckpointChecker(ep *ParentChainEndpoint) JobFunc {
 	checkpointHeight := promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace:   PROM_NAMESPACE_HOKU,
 		Name:        "last_bottomup_checkpoint_height",
 		ConstLabels: ep.Labels(),
 	})

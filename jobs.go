@@ -13,11 +13,14 @@ import (
 const (
 	PROM_LABEL_JOB_NAME   = "job"
 	PROM_LABEL_JOB_STATUS = "status"
+
+	PROM_NAMESPACE_HOKU = "hoku"
 )
 
 var (
 	counterJobRun = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "job_run",
+		Namespace: PROM_NAMESPACE_HOKU,
+		Name:      "job_run",
 	}, []string{PROM_LABEL_JOB_NAME, PROM_LABEL_JOB_STATUS})
 )
 
