@@ -21,13 +21,15 @@ var (
 	counterJobRun = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: PROM_NAMESPACE_HOKU,
 		Name:      "job_run",
-	}, []string{PROM_LABEL_JOB_NAME, PROM_LABEL_JOB_STATUS})
+	}, []string{PROM_LABEL_JOB_NAME, PROM_LABEL_NETWORK_NAME, PROM_LABEL_JOB_STATUS})
 )
 
 type JobFunc func(*slog.Logger) error
 
-func StartJob(name string, job JobFunc, interval time.Duration, parentLogger *slog.Logger) {
-	logger := parentLogger.With("job", name)
+func StartJob(jobName, network string, job JobFunc, interval time.Duration) {
+	logger := slog.
+		With("job", jobName).
+		With("network", network)
 
 	jobWrapper := func() (err error) {
 		defer func() {
@@ -47,7 +49,7 @@ func StartJob(name string, job JobFunc, interval time.Duration, parentLogger *sl
 				logger.Error("failed to run job", "error", err)
 				status = "failure"
 			}
-			counterJobRun.WithLabelValues(name, status).Inc()
+			counterJobRun.WithLabelValues(jobName, network, status).Inc()
 
 			logger.Debug("sleeping", "duration", interval)
 			time.Sleep(interval)

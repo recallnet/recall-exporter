@@ -181,15 +181,13 @@ func validatorAddress(ctx *cli.Context) common.Address {
 }
 
 func startSubnetJobs(ep *SubnetEndpoint, ctx *cli.Context) {
-	logger := slog.With("network", ctx.String(FLAG_SUBNET_NETWORK_NAME))
-	logger.Info("starting jobs")
-	StartJob("balance", newBalanceCheckerJob(ep.Endpoint, validatorAddress(ctx)), ctx.Duration(FLAG_SUBNET_BALANCE_CHECK_INTERVAL), logger)
-	StartJob("membership", newMembershipChecker(ep), ctx.Duration(FLAG_SUBNET_MEMBERSHIP_CHECK_INTERVAL), logger)
+	network := ctx.String(FLAG_SUBNET_NETWORK_NAME)
+	StartJob("balance", network, newBalanceCheckerJob(ep.Endpoint, validatorAddress(ctx)), ctx.Duration(FLAG_SUBNET_BALANCE_CHECK_INTERVAL))
+	StartJob("membership", network, newMembershipChecker(ep), ctx.Duration(FLAG_SUBNET_MEMBERSHIP_CHECK_INTERVAL))
 }
 
 func startParentChainJobs(ep *ParentChainEndpoint, ctx *cli.Context) {
-	logger := slog.With("network", ctx.String(FLAG_PARENT_CHAIN_NETWORK_NAME))
-	logger.Info("starting jobs")
-	StartJob("balance", newBalanceCheckerJob(ep.Endpoint, validatorAddress(ctx)), ctx.Duration(FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL), logger)
-	StartJob("bottomup-checkpoint", newBottomupCheckpointChecker(ep), ctx.Duration(FLAG_PARENT_CHAIN_BOTTOMUP_CHECKPOINT_CHECK_INTERVAL), logger)
+	network := ctx.String(FLAG_PARENT_CHAIN_NETWORK_NAME)
+	StartJob("balance", network, newBalanceCheckerJob(ep.Endpoint, validatorAddress(ctx)), ctx.Duration(FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL))
+	StartJob("bottomup-checkpoint", network, newBottomupCheckpointChecker(ep), ctx.Duration(FLAG_PARENT_CHAIN_BOTTOMUP_CHECKPOINT_CHECK_INTERVAL))
 }
