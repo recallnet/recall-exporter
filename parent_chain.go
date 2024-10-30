@@ -67,8 +67,10 @@ func (c *ValidatorInfoCollector) setSubnetMembership(addresses []common.Address,
 	c.addressesMux.Lock()
 	defer c.addressesMux.Unlock()
 
+	initialValidatorCount := len(c.currentSubnetValidatorAddresses)
 	c.validatorAddressesIteration++
 
+	logger.Debug("setting subnet membership in validator info collector")
 	for _, addr := range addresses {
 		if c.currentSubnetValidatorAddresses[addr] == 0 {
 			logger.Info("adding new validator", "addr", addr.Hex())
@@ -85,6 +87,11 @@ func (c *ValidatorInfoCollector) setSubnetMembership(addresses []common.Address,
 			c.gaugeValidatorCollateralTotal.DeleteLabelValues(addrHex)
 			delete(c.currentSubnetValidatorAddresses, addr)
 		}
+	}
+
+	if initialValidatorCount == 0 {
+		logger.Info("initial validator count was 0 -> triggering validator infor collection")
+		go c.collectValidatorsInfos(logger.With("context", "initial-validator-info-collection"))
 	}
 }
 
