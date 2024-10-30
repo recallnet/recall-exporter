@@ -90,8 +90,8 @@ func (c *CollateralChecker) setSubnetMembership(addresses []common.Address, logg
 	}
 
 	if initialValidatorCount == 0 {
-		logger.Info("initial validator count was 0 -> triggering validator infor collection")
-		go c.checkCollateral(logger.With("context", "initial-validator-info-collection"))
+		logger.Info("initial validator count was 0 -> triggering collateral check")
+		go c.checkCollateral(logger.With("context", "initial-collateral-check"))
 	}
 }
 
