@@ -31,9 +31,9 @@ func newBottomupCheckpointChecker(ep *ParentChainEndpoint) JobFunc {
 	}
 }
 
-var validatorInfoCollector *ValidatorInfoCollector
+var collateralChecker *CollateralChecker
 
-type ValidatorInfoCollector struct {
+type CollateralChecker struct {
 	endpoint *ParentChainEndpoint
 
 	// Address -> check iteration
@@ -41,29 +41,30 @@ type ValidatorInfoCollector struct {
 	addressesMux                    sync.Mutex
 	validatorAddressesIteration     int
 
-	gaugeValidatorCollateralConfirmed *prometheus.GaugeVec
-	gaugeValidatorCollateralTotal     *prometheus.GaugeVec
+	gaugeValidatorCollateral *prometheus.GaugeVec
+	gaugeTotalCollateral     prometheus.Gauge
 }
 
-func NewValidatorInfoCollector(ep *ParentChainEndpoint) *ValidatorInfoCollector {
-	return &ValidatorInfoCollector{
+func NewCollateralChecker(ep *ParentChainEndpoint) *CollateralChecker {
+	return &CollateralChecker{
 		endpoint:                        ep,
 		currentSubnetValidatorAddresses: map[common.Address]int{},
 
-		gaugeValidatorCollateralConfirmed: promauto.NewGaugeVec(prometheus.GaugeOpts{
+		gaugeValidatorCollateral: promauto.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace:   PROM_NAMESPACE_HOKU,
-			Name:        "validator_collateral_confirmed",
+			Name:        "validator_collateral",
 			ConstLabels: ep.ConstLabels(),
 		}, []string{PROM_LABEL_ADDRESS}),
-		gaugeValidatorCollateralTotal: promauto.NewGaugeVec(prometheus.GaugeOpts{
+		gaugeTotalCollateral: promauto.NewGauge(prometheus.GaugeOpts{
 			Namespace:   PROM_NAMESPACE_HOKU,
-			Name:        "validator_collateral_total",
+			Name:        "collateral_confirmed_total",
+			Help:        "Total amount of confirmed collateral across all validators.",
 			ConstLabels: ep.ConstLabels(),
-		}, []string{PROM_LABEL_ADDRESS}),
+		}),
 	}
 }
 
-func (c *ValidatorInfoCollector) setSubnetMembership(addresses []common.Address, logger *slog.Logger) {
+func (c *CollateralChecker) setSubnetMembership(addresses []common.Address, logger *slog.Logger) {
 	c.addressesMux.Lock()
 	defer c.addressesMux.Unlock()
 
@@ -83,25 +84,25 @@ func (c *ValidatorInfoCollector) setSubnetMembership(addresses []common.Address,
 		if iteration < c.validatorAddressesIteration {
 			addrHex := addr.Hex()
 			logger.Info("removing validator", "addr", addrHex)
-			c.gaugeValidatorCollateralConfirmed.DeleteLabelValues(addrHex)
-			c.gaugeValidatorCollateralTotal.DeleteLabelValues(addrHex)
+			c.gaugeValidatorCollateral.DeleteLabelValues(addrHex)
 			delete(c.currentSubnetValidatorAddresses, addr)
 		}
 	}
 
 	if initialValidatorCount == 0 {
 		logger.Info("initial validator count was 0 -> triggering validator infor collection")
-		go c.collectValidatorsInfos(logger.With("context", "initial-validator-info-collection"))
+		go c.checkCollateral(logger.With("context", "initial-validator-info-collection"))
 	}
 }
 
-func (c *ValidatorInfoCollector) collectValidatorsInfos(logger *slog.Logger) error {
+func (c *CollateralChecker) checkCollateral(logger *slog.Logger) error {
 	c.addressesMux.Lock()
 	defer c.addressesMux.Unlock()
 
-	logger.Debug("collecting infos for all validators", "validator-count", len(c.currentSubnetValidatorAddresses))
+	logger.Debug("collecting collateral for all validators", "validator-count", len(c.currentSubnetValidatorAddresses))
+	c.publishTotalCollateral(logger)
 	for addr := range c.currentSubnetValidatorAddresses {
-		err := c.publishValidatorMetrics(addr, logger)
+		err := c.publishValidatorCollateral(addr, logger)
 		if err != nil {
 			return err
 		}
@@ -109,21 +110,30 @@ func (c *ValidatorInfoCollector) collectValidatorsInfos(logger *slog.Logger) err
 	return nil
 }
 
-func (c *ValidatorInfoCollector) publishValidatorMetrics(address common.Address, logger *slog.Logger) error {
+func (c *CollateralChecker) publishValidatorCollateral(address common.Address, logger *slog.Logger) error {
 	addrHex := address.Hex()
 
-	info, err := c.endpoint.SubnetCaller.GetValidator(nil, address)
+	collateral, err := c.endpoint.SubnetCaller.GetTotalValidatorCollateral(nil, address)
 	if err != nil {
-		return fmt.Errorf("failed to get validator info: %w", err)
+		return fmt.Errorf("failed to get validator collateral: %w", err)
 	}
 
-	value, _ := info.ConfirmedCollateral.Float64()
-	c.gaugeValidatorCollateralConfirmed.WithLabelValues(addrHex).Set(value)
-	logger.Debug("got collateral confirmed", "address", addrHex, "collateral", value)
+	value, _ := collateral.Float64()
+	c.gaugeValidatorCollateral.WithLabelValues(addrHex).Set(value)
+	logger.Debug("got collateral", "address", addrHex, "collateral", value)
 
-	value, _ = info.TotalCollateral.Float64()
-	c.gaugeValidatorCollateralTotal.WithLabelValues(addrHex).Set(value)
-	logger.Debug("got collateral total", "address", addrHex, "collateral", value)
+	return nil
+}
+
+func (c *CollateralChecker) publishTotalCollateral(logger *slog.Logger) error {
+	collateral, err := c.endpoint.SubnetCaller.GetTotalConfirmedCollateral(nil)
+	if err != nil {
+		return fmt.Errorf("failed to get total collateral: %w", err)
+	}
+
+	value, _ := collateral.Float64()
+	c.gaugeTotalCollateral.Set(value)
+	logger.Debug("got total collateral", "collateral", value)
 
 	return nil
 }
