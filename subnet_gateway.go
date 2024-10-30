@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -27,7 +28,9 @@ func newMembershipChecker(ep *SubnetEndpoint) JobFunc {
 		}
 
 		logger.Debug("got members", "count", len(ms.Validators))
+		validatorAddresses := []common.Address{}
 		for _, validator := range ms.Validators {
+			validatorAddresses = append(validatorAddresses, validator.Addr)
 			addr := validator.Addr.Hex()
 			if knownMembers[addr] == 0 {
 				logger.Info("add new member", "addr", addr)
@@ -46,6 +49,8 @@ func newMembershipChecker(ep *SubnetEndpoint) JobFunc {
 				logger.Info("remove old member", "addr", validatorAddress)
 			}
 		}
+
+		validatorInfoCollector.setSubnetMembership(validatorAddresses, logger)
 
 		return nil
 	}
