@@ -21,6 +21,7 @@ const (
 	FLAG_PARENT_CHAIN_NETWORK_NAME                       = "parent-chain-network-name"
 	FLAG_PARENT_CHAIN_SUBNET_CONTRACT_ADDRESS            = "parent-chain-subnet-contract-address"
 	FLAG_PARENT_CHAIN_BOTTOMUP_CHECKPOINT_CHECK_INTERVAL = "parent-chain-bottomup-checkpoint-check-interval"
+	FLAG_PARENT_CHAIN_COLLATERAL_CHECK_INTERVAL          = "parent-chain-collateral-check-interval"
 	FLAG_VALIDATOR_ADDRESS                               = "validator-address"
 	FLAG_SUBNET_RPC_URL                                  = "subnet-rpc-url"
 	FLAG_SUBNET_NETWORK_NAME                             = "subnet-network-name"
@@ -88,6 +89,12 @@ func main() {
 						Usage:   "How often the bottomup checkpoint must be checked",
 						Value:   time.Minute,
 						EnvVars: []string{"PARENT_CHAIN_BOTTOMUP_CHECKPOINT_CHECK_INTERVAL"},
+					},
+					&cli.DurationFlag{
+						Name:    FLAG_PARENT_CHAIN_COLLATERAL_CHECK_INTERVAL,
+						Usage:   "How often all validator collaterals must be checked",
+						Value:   time.Minute,
+						EnvVars: []string{"PARENT_CHAIN_COLLATERAL_CHECK_INTERVAL"},
 					},
 					&cli.StringFlag{
 						Name:     FLAG_VALIDATOR_ADDRESS,
@@ -190,4 +197,7 @@ func startParentChainJobs(ep *ParentChainEndpoint, ctx *cli.Context) {
 	network := ctx.String(FLAG_PARENT_CHAIN_NETWORK_NAME)
 	StartJob("balance", network, newBalanceCheckerJob(ep.Endpoint, validatorAddress(ctx)), ctx.Duration(FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL))
 	StartJob("bottomup-checkpoint", network, newBottomupCheckpointChecker(ep), ctx.Duration(FLAG_PARENT_CHAIN_BOTTOMUP_CHECKPOINT_CHECK_INTERVAL))
+
+	collateralChecker = NewCollateralChecker(ep)
+	StartJob("collateral", network, collateralChecker.updateAllCollateralMetrics, ctx.Duration(FLAG_PARENT_CHAIN_COLLATERAL_CHECK_INTERVAL))
 }
