@@ -50,7 +50,7 @@ func newMembershipChecker(ep *SubnetEndpoint) JobFunc {
 			}
 		}
 
-		collateralChecker.setSubnetMembership(validatorAddresses, logger)
+		collateralChecker.setValidatorAddresses(validatorAddresses, logger)
 
 		return nil
 	}

@@ -36,9 +36,10 @@ var collateralChecker *CollateralChecker
 type CollateralChecker struct {
 	endpoint *ParentChainEndpoint
 
-	// Address -> check iteration
+	// currentSubnetValidatorAddresses contains currently known validator addresses pointing to the iteration counter.
+	// This info allows to determine what addresses were removed from the subnet when updating the subnet membership.
 	currentSubnetValidatorAddresses map[common.Address]int
-	addressesMux                    sync.Mutex
+	validatorAddressesMux           sync.Mutex
 	validatorAddressesIteration     int
 
 	gaugeValidatorCollateral *prometheus.GaugeVec
@@ -64,14 +65,15 @@ func NewCollateralChecker(ep *ParentChainEndpoint) *CollateralChecker {
 	}
 }
 
-func (c *CollateralChecker) setSubnetMembership(addresses []common.Address, logger *slog.Logger) {
-	c.addressesMux.Lock()
-	defer c.addressesMux.Unlock()
+// setValidatorAddresses sets addresses of all known validators in the subnet.
+func (c *CollateralChecker) setValidatorAddresses(addresses []common.Address, logger *slog.Logger) {
+	c.validatorAddressesMux.Lock()
+	defer c.validatorAddressesMux.Unlock()
 
 	initialValidatorCount := len(c.currentSubnetValidatorAddresses)
 	c.validatorAddressesIteration++
 
-	logger.Debug("setting subnet membership in validator info collector")
+	logger.Debug("setting validator addresses in collateral checker")
 	for _, addr := range addresses {
 		if c.currentSubnetValidatorAddresses[addr] == 0 {
 			logger.Info("adding new validator", "addr", addr.Hex())
@@ -79,7 +81,7 @@ func (c *CollateralChecker) setSubnetMembership(addresses []common.Address, logg
 		c.currentSubnetValidatorAddresses[addr] = c.validatorAddressesIteration
 	}
 
-	// delete old
+	// Delete old validator addresses and their metrics.
 	for addr, iteration := range c.currentSubnetValidatorAddresses {
 		if iteration < c.validatorAddressesIteration {
 			addrHex := addr.Hex()
@@ -91,18 +93,19 @@ func (c *CollateralChecker) setSubnetMembership(addresses []common.Address, logg
 
 	if initialValidatorCount == 0 {
 		logger.Info("initial validator count was 0 -> triggering collateral check")
-		go c.checkCollateral(logger.With("context", "initial-collateral-check"))
+		go c.updateAllCollateralMetrics(logger.With("context", "initial-collateral-check"))
 	}
 }
 
-func (c *CollateralChecker) checkCollateral(logger *slog.Logger) error {
-	c.addressesMux.Lock()
-	defer c.addressesMux.Unlock()
+// updateAllCollateralMetrics updates collateral metrics for every known validator and the total subnet collateral.
+func (c *CollateralChecker) updateAllCollateralMetrics(logger *slog.Logger) error {
+	c.validatorAddressesMux.Lock()
+	defer c.validatorAddressesMux.Unlock()
 
 	logger.Debug("collecting collateral for all validators", "validator-count", len(c.currentSubnetValidatorAddresses))
-	c.publishTotalCollateral(logger)
+	c.updateTotalCollateralMetric(logger)
 	for addr := range c.currentSubnetValidatorAddresses {
-		err := c.publishValidatorCollateral(addr, logger)
+		err := c.updateValidatorCollateralMetric(addr, logger)
 		if err != nil {
 			return err
 		}
@@ -110,7 +113,8 @@ func (c *CollateralChecker) checkCollateral(logger *slog.Logger) error {
 	return nil
 }
 
-func (c *CollateralChecker) publishValidatorCollateral(address common.Address, logger *slog.Logger) error {
+// updateValidatorCollateralMetric updates the collateral metric for the given validator address.
+func (c *CollateralChecker) updateValidatorCollateralMetric(address common.Address, logger *slog.Logger) error {
 	addrHex := address.Hex()
 
 	collateral, err := c.endpoint.SubnetCaller.GetTotalValidatorCollateral(nil, address)
@@ -125,7 +129,7 @@ func (c *CollateralChecker) publishValidatorCollateral(address common.Address, l
 	return nil
 }
 
-func (c *CollateralChecker) publishTotalCollateral(logger *slog.Logger) error {
+func (c *CollateralChecker) updateTotalCollateralMetric(logger *slog.Logger) error {
 	collateral, err := c.endpoint.SubnetCaller.GetTotalConfirmedCollateral(nil)
 	if err != nil {
 		return fmt.Errorf("failed to get total collateral: %w", err)

@@ -199,5 +199,5 @@ func startParentChainJobs(ep *ParentChainEndpoint, ctx *cli.Context) {
 	StartJob("bottomup-checkpoint", network, newBottomupCheckpointChecker(ep), ctx.Duration(FLAG_PARENT_CHAIN_BOTTOMUP_CHECKPOINT_CHECK_INTERVAL))
 
 	collateralChecker = NewCollateralChecker(ep)
-	StartJob("collateral", network, collateralChecker.checkCollateral, ctx.Duration(FLAG_PARENT_CHAIN_COLLATERAL_CHECK_INTERVAL))
+	StartJob("collateral", network, collateralChecker.updateAllCollateralMetrics, ctx.Duration(FLAG_PARENT_CHAIN_COLLATERAL_CHECK_INTERVAL))
 }
