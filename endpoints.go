@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/hokunet/hoku-exporter/contracts/erc20"
 	"github.com/hokunet/hoku-exporter/contracts/gateway"
 	"github.com/hokunet/hoku-exporter/contracts/subnet"
 	"github.com/prometheus/client_golang/prometheus"
@@ -84,7 +85,8 @@ func newSubnetEndpoint(ctx *cli.Context) (*SubnetEndpoint, error) {
 
 type ParentChainEndpoint struct {
 	*Endpoint
-	SubnetCaller *subnet.SubnetCaller
+	SubnetCaller       *subnet.SubnetCaller
+	SupplySourceCaller *erc20.Erc20Caller
 }
 
 func newParentChainEndpoint(ctx *cli.Context) (*ParentChainEndpoint, error) {
@@ -103,6 +105,17 @@ func newParentChainEndpoint(ctx *cli.Context) (*ParentChainEndpoint, error) {
 	parentChainEp.SubnetCaller, err = subnet.NewSubnetCaller(subnetContractAddress, ep.Client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create SubnetCaller: %w", err)
+	}
+
+	asset, err := parentChainEp.SubnetCaller.SupplySource(nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get supply source address: %w", err)
+	}
+	slog.Info("got supply source address", "addr", asset.TokenAddress.Hex())
+
+	parentChainEp.SupplySourceCaller, err = erc20.NewErc20Caller(asset.TokenAddress, ep.Client)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create supply source caller: %w", err)
 	}
 
 	return parentChainEp, nil

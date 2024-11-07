@@ -196,6 +196,7 @@ func startSubnetJobs(ep *SubnetEndpoint, ctx *cli.Context) {
 func startParentChainJobs(ep *ParentChainEndpoint, ctx *cli.Context) {
 	network := ctx.String(FLAG_PARENT_CHAIN_NETWORK_NAME)
 	StartJob("balance", network, newBalanceCheckerJob(ep.Endpoint, validatorAddress(ctx)), ctx.Duration(FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL))
+	StartJob("balance-erc20", network, newErc20TokenBalanceCheckerJob(ep, validatorAddress(ctx)), ctx.Duration(FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL))
 	StartJob("bottomup-checkpoint", network, newBottomupCheckpointChecker(ep), ctx.Duration(FLAG_PARENT_CHAIN_BOTTOMUP_CHECKPOINT_CHECK_INTERVAL))
 
 	collateralChecker = NewCollateralChecker(ep)
