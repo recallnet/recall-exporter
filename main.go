@@ -23,6 +23,8 @@ const (
 	FLAG_PARENT_CHAIN_BOTTOMUP_CHECKPOINT_CHECK_INTERVAL = "parent-chain-bottomup-checkpoint-check-interval"
 	FLAG_PARENT_CHAIN_COLLATERAL_CHECK_INTERVAL          = "parent-chain-collateral-check-interval"
 	FLAG_VALIDATOR_ADDRESS                               = "validator-address"
+	FLAG_RELAYER_ADDRESS                                 = "relayer-address"
+	FLAG_FAUCET_ADDRESS                                  = "faucet-address"
 	FLAG_SUBNET_RPC_URL                                  = "subnet-rpc-url"
 	FLAG_SUBNET_NETWORK_NAME                             = "subnet-network-name"
 	FLAG_SUBNET_BALANCE_CHECK_INTERVAL                   = "subnet-balance-check-interval"
@@ -101,6 +103,16 @@ func main() {
 						Usage:    "Validator address",
 						EnvVars:  []string{"VALIDATOR_ADDRESS"},
 						Required: true,
+					},
+					&cli.StringFlag{
+						Name:    FLAG_RELAYER_ADDRESS,
+						Usage:   "Subnet relayer address",
+						EnvVars: []string{"RELAYER_ADDRESS"},
+					},
+					&cli.StringFlag{
+						Name:    FLAG_FAUCET_ADDRESS,
+						Usage:   "Faucet address",
+						EnvVars: []string{"FAUCET_ADDRESS"},
 					},
 					&cli.StringFlag{
 						Name:    FLAG_SUBNET_RPC_URL,
@@ -187,16 +199,37 @@ func validatorAddress(ctx *cli.Context) common.Address {
 	return common.HexToAddress(ctx.String(FLAG_VALIDATOR_ADDRESS))
 }
 
+const (
+	addressOwnerValidator     = "validator"
+	addressOwnerSubnetRelayer = "relayer"
+	addressOwnerFaucet        = "faucet"
+)
+
 func startSubnetJobs(ep *SubnetEndpoint, ctx *cli.Context) {
 	network := ctx.String(FLAG_SUBNET_NETWORK_NAME)
-	StartJob("balance", network, newBalanceCheckerJob(ep.Endpoint, validatorAddress(ctx)), ctx.Duration(FLAG_SUBNET_BALANCE_CHECK_INTERVAL))
+	StartJob("balance-validator", network, newBalanceCheckerJob(ep.Endpoint, addressOwnerValidator, validatorAddress(ctx)), ctx.Duration(FLAG_SUBNET_BALANCE_CHECK_INTERVAL))
 	StartJob("membership", network, newMembershipChecker(ep), ctx.Duration(FLAG_SUBNET_MEMBERSHIP_CHECK_INTERVAL))
+
+	faucetAddress := ctx.String(FLAG_FAUCET_ADDRESS)
+	if faucetAddress != "" {
+		StartJob("balance-faucet", network,
+			newBalanceCheckerJob(ep.Endpoint, addressOwnerFaucet, common.HexToAddress(faucetAddress)),
+			ctx.Duration(FLAG_SUBNET_BALANCE_CHECK_INTERVAL))
+	}
 }
 
 func startParentChainJobs(ep *ParentChainEndpoint, ctx *cli.Context) {
 	network := ctx.String(FLAG_PARENT_CHAIN_NETWORK_NAME)
-	StartJob("balance", network, newBalanceCheckerJob(ep.Endpoint, validatorAddress(ctx)), ctx.Duration(FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL))
-	StartJob("balance-erc20", network, newErc20TokenBalanceCheckerJob(ep, validatorAddress(ctx)), ctx.Duration(FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL))
+	StartJob("balance-validator", network, newBalanceCheckerJob(ep.Endpoint, addressOwnerValidator, validatorAddress(ctx)), ctx.Duration(FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL))
+	StartJob("balance-erc20", network, newErc20TokenBalanceCheckerJob(ep, addressOwnerValidator, validatorAddress(ctx)), ctx.Duration(FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL))
+
+	relayerAddress := ctx.String(FLAG_RELAYER_ADDRESS)
+	if relayerAddress != "" {
+		StartJob("balance-relayer", network,
+			newBalanceCheckerJob(ep.Endpoint, addressOwnerSubnetRelayer, common.HexToAddress(relayerAddress)),
+			ctx.Duration(FLAG_PARENT_CHAIN_BALANCE_CHECK_INTERVAL))
+	}
+
 	StartJob("bottomup-checkpoint", network, newBottomupCheckpointChecker(ep), ctx.Duration(FLAG_PARENT_CHAIN_BOTTOMUP_CHECKPOINT_CHECK_INTERVAL))
 
 	collateralChecker = NewCollateralChecker(ep)
