@@ -11,17 +11,19 @@ import (
 )
 
 const (
-	PROM_LABEL_NETWORK_NAME = "network_name"
-	PROM_LABEL_CHAIN_ID     = "chain_id"
-	PROM_LABEL_ADDRESS      = "addr"
-	PROM_LABEL_KIND         = "kind"
+	PROM_LABEL_NETWORK_NAME  = "network_name"
+	PROM_LABEL_CHAIN_ID      = "chain_id"
+	PROM_LABEL_ADDRESS_OWNER = "addr_owner"
+	PROM_LABEL_ADDRESS       = "addr"
+	PROM_LABEL_KIND          = "kind"
 )
 
-func newBalanceCheckerJob(ep *Endpoint, addressToCheck common.Address) JobFunc {
+func newBalanceCheckerJob(ep *Endpoint, addressOwner string, addressToCheck common.Address) JobFunc {
 	gaugeBalance := promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: PROM_NAMESPACE_HOKU,
-		Name:      "validator_balance",
+		Name:      "balance",
 		ConstLabels: ep.ConstLabels(
+			PROM_LABEL_ADDRESS_OWNER, addressOwner,
 			PROM_LABEL_ADDRESS, addressToCheck.Hex(),
 			PROM_LABEL_KIND, "native",
 		),
@@ -40,11 +42,12 @@ func newBalanceCheckerJob(ep *Endpoint, addressToCheck common.Address) JobFunc {
 	}
 }
 
-func newErc20TokenBalanceCheckerJob(ep *ParentChainEndpoint, addressToCheck common.Address) JobFunc {
+func newErc20TokenBalanceCheckerJob(ep *ParentChainEndpoint, addressOwner string, addressToCheck common.Address) JobFunc {
 	gaugeBalance := promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: PROM_NAMESPACE_HOKU,
-		Name:      "validator_balance",
+		Name:      "balance",
 		ConstLabels: ep.ConstLabels(
+			PROM_LABEL_ADDRESS_OWNER, addressOwner,
 			PROM_LABEL_ADDRESS, addressToCheck.Hex(),
 			PROM_LABEL_KIND, "erc20",
 		),
