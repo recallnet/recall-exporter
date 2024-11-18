@@ -140,7 +140,6 @@ func main() {
 					&cli.DurationFlag{
 						Name:    FLAG_SUBNET_MEMBERSHIP_CHECK_INTERVAL,
 						Usage:   "Subnet membership check interval",
-						Value:   time.Minute,
 						EnvVars: []string{"SUBNET_MEMBERSHIP_CHECK_INTERVAL"},
 					},
 				},
@@ -208,7 +207,11 @@ const (
 func startSubnetJobs(ep *SubnetEndpoint, ctx *cli.Context) {
 	network := ctx.String(FLAG_SUBNET_NETWORK_NAME)
 	StartJob("balance-validator", network, newBalanceCheckerJob(ep.Endpoint, addressOwnerValidator, validatorAddress(ctx)), ctx.Duration(FLAG_SUBNET_BALANCE_CHECK_INTERVAL))
-	StartJob("membership", network, newMembershipChecker(ep), ctx.Duration(FLAG_SUBNET_MEMBERSHIP_CHECK_INTERVAL))
+
+	membershipCheckInterval := ctx.Duration(FLAG_SUBNET_MEMBERSHIP_CHECK_INTERVAL)
+	if membershipCheckInterval != time.Duration(0) {
+		StartJob("membership", network, newMembershipChecker(ep), membershipCheckInterval)
+	}
 
 	faucetAddress := ctx.String(FLAG_FAUCET_ADDRESS)
 	if faucetAddress != "" {
