@@ -17,12 +17,10 @@ const (
 	PROM_NAMESPACE_HOKU = "hoku"
 )
 
-var (
-	counterJobRun = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: PROM_NAMESPACE_HOKU,
-		Name:      "job_run",
-	}, []string{PROM_LABEL_JOB_NAME, PROM_LABEL_NETWORK_NAME, PROM_LABEL_JOB_STATUS})
-)
+var counterJobRun = promauto.NewCounterVec(prometheus.CounterOpts{
+	Namespace: PROM_NAMESPACE_HOKU,
+	Name:      "job_run",
+}, []string{PROM_LABEL_JOB_NAME, PROM_LABEL_NETWORK_NAME, PROM_LABEL_JOB_STATUS})
 
 type JobFunc func(*slog.Logger) error
 
@@ -30,6 +28,11 @@ func StartJob(jobName, network string, job JobFunc, interval time.Duration) {
 	logger := slog.
 		With("job", jobName).
 		With("network", network)
+
+	if interval == time.Duration(0) {
+		logger.Info("Job disabled")
+		return
+	}
 
 	jobWrapper := func() (err error) {
 		defer func() {
