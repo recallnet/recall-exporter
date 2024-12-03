@@ -29,6 +29,8 @@ const (
 	FLAG_SUBNET_BALANCE_CHECK_INTERVAL                   = "subnet-balance-check-interval"
 	FLAG_SUBNET_GATEWAY_ADDRESS                          = "subnet-gateway-address"
 	FLAG_SUBNET_MEMBERSHIP_CHECK_INTERVAL                = "subnet-gateway-check-interval"
+	FLAG_SUBNET_CREDIT_CONTRACT_ADDRESS                  = "subnet-credit-contract-address"
+	FLAG_SUBNET_STATS_CHECK_INTERVAL                     = "subnet-stats-check-interval"
 )
 
 var (
@@ -130,6 +132,16 @@ func main() {
 						EnvVars:  []string{"SUBNET_GATEWAY_ADDRESS"},
 						Required: true,
 					},
+					&cli.StringFlag{
+						Name:    FLAG_SUBNET_CREDIT_CONTRACT_ADDRESS,
+						Usage:   "Credit contract address",
+						EnvVars: []string{"SUBNET_CREDIT_CONTRACT_ADDRESS"},
+					},
+					&cli.DurationFlag{
+						Name:    FLAG_SUBNET_STATS_CHECK_INTERVAL,
+						Usage:   "Subnet stats check interval",
+						EnvVars: []string{"SUBNET_STATS_CHECK_INTERVAL"},
+					},
 					&cli.DurationFlag{
 						Name:    FLAG_SUBNET_MEMBERSHIP_CHECK_INTERVAL,
 						Usage:   "Subnet membership check interval",
@@ -207,6 +219,10 @@ func startSubnetJobs(ep *SubnetEndpoint, ctx *cli.Context) {
 		StartJob("balance-faucet", network,
 			newBalanceCheckerJob(ep.Endpoint, addressOwnerFaucet, common.HexToAddress(faucetAddress)),
 			ctx.Duration(FLAG_SUBNET_BALANCE_CHECK_INTERVAL))
+	}
+
+	if ep.CreditCaller != nil {
+		StartJob("subnet-stats", network, newSubnetStatsChecker(ep), ctx.Duration(FLAG_SUBNET_STATS_CHECK_INTERVAL))
 	}
 }
 
