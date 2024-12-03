@@ -10,4 +10,4 @@ FROM alpine
 
 COPY --from=builder /go/hoku-exporter /bin/
 
-CMD hoku-exporter run
+CMD ["hoku-exporter", "run"]
