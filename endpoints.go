@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/hokunet/hoku-exporter/contracts/credit"
 	"github.com/hokunet/hoku-exporter/contracts/erc20"
 	"github.com/hokunet/hoku-exporter/contracts/gateway"
 	"github.com/hokunet/hoku-exporter/contracts/subnet"
@@ -61,6 +62,7 @@ func (e *Endpoint) ConstLabels(keyVal ...string) prometheus.Labels {
 type SubnetEndpoint struct {
 	*Endpoint
 	GatewayCaller *gateway.GatewayCaller
+	CreditCaller  *credit.CreditCaller
 }
 
 func newSubnetEndpoint(ctx *cli.Context) (*SubnetEndpoint, error) {
@@ -78,6 +80,14 @@ func newSubnetEndpoint(ctx *cli.Context) (*SubnetEndpoint, error) {
 	subnetEp.GatewayCaller, err = gateway.NewGatewayCaller(gwAddress, ep.Client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create subnet gateway caller: %w", err)
+	}
+
+	creditAddress := ctx.String(FLAG_SUBNET_CREDIT_CONTRACT_ADDRESS)
+	if creditAddress != "" {
+		subnetEp.CreditCaller, err = credit.NewCreditCaller(common.HexToAddress(creditAddress), ep.Client)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create credit caller: %w", err)
+		}
 	}
 
 	return subnetEp, nil
