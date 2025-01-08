@@ -30,3 +30,4 @@ jobs:
           tags: |
             textilemachine/hoku-exporter:latest
             textilemachine/hoku-exporter:sha-${{ env.COMMIT_SHORT_SHA }}
+          platforms: linux/amd64,linux/arm64
