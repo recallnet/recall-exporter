@@ -29,7 +29,7 @@ const (
 	FLAG_SUBNET_BALANCE_CHECK_INTERVAL                   = "subnet-balance-check-interval"
 	FLAG_SUBNET_GATEWAY_ADDRESS                          = "subnet-gateway-address"
 	FLAG_SUBNET_MEMBERSHIP_CHECK_INTERVAL                = "subnet-gateway-check-interval"
-	FLAG_SUBNET_CREDIT_CONTRACT_ADDRESS                  = "subnet-credit-contract-address"
+	FLAG_SUBNET_BLOB_MANAGER_CONTRACT_ADDRESS            = "subnet-blob-manager-contract-address"
 	FLAG_SUBNET_STATS_CHECK_INTERVAL                     = "subnet-stats-check-interval"
 )
 
@@ -133,9 +133,9 @@ func main() {
 						Required: true,
 					},
 					&cli.StringFlag{
-						Name:    FLAG_SUBNET_CREDIT_CONTRACT_ADDRESS,
-						Usage:   "Credit contract address",
-						EnvVars: []string{"SUBNET_CREDIT_CONTRACT_ADDRESS"},
+						Name:    FLAG_SUBNET_BLOB_MANAGER_CONTRACT_ADDRESS,
+						Usage:   "Blob manager contract address",
+						EnvVars: []string{"SUBNET_BLOB_MANAGER_CONTRACT_ADDRESS"},
 					},
 					&cli.DurationFlag{
 						Name:    FLAG_SUBNET_STATS_CHECK_INTERVAL,
@@ -221,7 +221,7 @@ func startSubnetJobs(ep *SubnetEndpoint, ctx *cli.Context) {
 			ctx.Duration(FLAG_SUBNET_BALANCE_CHECK_INTERVAL))
 	}
 
-	if ep.CreditCaller != nil {
+	if ep.BlobsCaller != nil {
 		StartJob("subnet-stats", network, newSubnetStatsChecker(ep), ctx.Duration(FLAG_SUBNET_STATS_CHECK_INTERVAL))
 	}
 }

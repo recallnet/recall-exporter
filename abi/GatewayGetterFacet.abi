@@ -181,6 +181,42 @@
                 "internalType": "bytes"
               }
             ]
+          },
+          {
+            "name": "activity",
+            "type": "tuple",
+            "internalType": "struct CompressedActivityRollup",
+            "components": [
+              {
+                "name": "consensus",
+                "type": "tuple",
+                "internalType": "struct Consensus.CompressedSummary",
+                "components": [
+                  {
+                    "name": "stats",
+                    "type": "tuple",
+                    "internalType": "struct Consensus.AggregatedStats",
+                    "components": [
+                      {
+                        "name": "totalActiveValidators",
+                        "type": "uint64",
+                        "internalType": "uint64"
+                      },
+                      {
+                        "name": "totalNumBlocksCommitted",
+                        "type": "uint64",
+                        "internalType": "uint64"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "dataRootCommitment",
+                    "type": "bytes32",
+                    "internalType": "Consensus.MerkleHash"
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -622,6 +658,42 @@
                 "internalType": "bytes"
               }
             ]
+          },
+          {
+            "name": "activity",
+            "type": "tuple",
+            "internalType": "struct CompressedActivityRollup",
+            "components": [
+              {
+                "name": "consensus",
+                "type": "tuple",
+                "internalType": "struct Consensus.CompressedSummary",
+                "components": [
+                  {
+                    "name": "stats",
+                    "type": "tuple",
+                    "internalType": "struct Consensus.AggregatedStats",
+                    "components": [
+                      {
+                        "name": "totalActiveValidators",
+                        "type": "uint64",
+                        "internalType": "uint64"
+                      },
+                      {
+                        "name": "totalNumBlocksCommitted",
+                        "type": "uint64",
+                        "internalType": "uint64"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "dataRootCommitment",
+                    "type": "bytes32",
+                    "internalType": "Consensus.MerkleHash"
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -841,6 +913,42 @@
                 "name": "message",
                 "type": "bytes",
                 "internalType": "bytes"
+              }
+            ]
+          },
+          {
+            "name": "activity",
+            "type": "tuple",
+            "internalType": "struct CompressedActivityRollup",
+            "components": [
+              {
+                "name": "consensus",
+                "type": "tuple",
+                "internalType": "struct Consensus.CompressedSummary",
+                "components": [
+                  {
+                    "name": "stats",
+                    "type": "tuple",
+                    "internalType": "struct Consensus.AggregatedStats",
+                    "components": [
+                      {
+                        "name": "totalActiveValidators",
+                        "type": "uint64",
+                        "internalType": "uint64"
+                      },
+                      {
+                        "name": "totalNumBlocksCommitted",
+                        "type": "uint64",
+                        "internalType": "uint64"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "dataRootCommitment",
+                    "type": "bytes32",
+                    "internalType": "Consensus.MerkleHash"
+                  }
+                ]
               }
             ]
           }
@@ -1065,6 +1173,42 @@
                 "name": "message",
                 "type": "bytes",
                 "internalType": "bytes"
+              }
+            ]
+          },
+          {
+            "name": "activity",
+            "type": "tuple",
+            "internalType": "struct CompressedActivityRollup",
+            "components": [
+              {
+                "name": "consensus",
+                "type": "tuple",
+                "internalType": "struct Consensus.CompressedSummary",
+                "components": [
+                  {
+                    "name": "stats",
+                    "type": "tuple",
+                    "internalType": "struct Consensus.AggregatedStats",
+                    "components": [
+                      {
+                        "name": "totalActiveValidators",
+                        "type": "uint64",
+                        "internalType": "uint64"
+                      },
+                      {
+                        "name": "totalNumBlocksCommitted",
+                        "type": "uint64",
+                        "internalType": "uint64"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "dataRootCommitment",
+                    "type": "bytes32",
+                    "internalType": "Consensus.MerkleHash"
+                  }
+                ]
               }
             ]
           }

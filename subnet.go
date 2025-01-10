@@ -97,14 +97,14 @@ func newSubnetStatsChecker(ep *SubnetEndpoint) JobFunc {
 		Name:        "subnet_stats_resolving",
 		ConstLabels: ep.ConstLabels(),
 	})
-	gaugeCreditDebitRate := promauto.NewGauge(prometheus.GaugeOpts{
+	gaugeTokenCreditRate := promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace:   PROM_NAMESPACE_HOKU,
-		Name:        "subnet_stats_credit_debit_rate",
+		Name:        "subnet_stats_token_credit_rate",
 		ConstLabels: ep.ConstLabels(),
 	})
 
 	return func(logger *slog.Logger) error {
-		stats, err := ep.CreditCaller.GetSubnetStats(nil)
+		stats, err := ep.BlobsCaller.GetSubnetStats(nil)
 		if err != nil {
 			return fmt.Errorf("failed to get subnet stats: %w", err)
 		}
@@ -113,10 +113,10 @@ func newSubnetStatsChecker(ep *SubnetEndpoint) JobFunc {
 		gaugeBlobs.Set(float64(stats.NumBlobs))
 		gaugeResolving.Set(float64(stats.NumResolving))
 		gaugeAccounts.Set(float64(stats.NumAccounts))
-		gaugeCreditDebitRate.Set(float64(stats.CreditDebitRate))
+		gaugeTokenCreditRate.Set(bigIntToFloat(stats.TokenCreditRate))
 
-		gaugeCapacity.WithLabelValues("free").Set(bigIntToFloat(stats.CapacityFree))
-		gaugeCapacity.WithLabelValues("used").Set(bigIntToFloat(stats.CapacityUsed))
+		gaugeCapacity.WithLabelValues("free").Set(float64(stats.CapacityFree))
+		gaugeCapacity.WithLabelValues("used").Set(float64(stats.CapacityUsed))
 
 		gaugeCredit.WithLabelValues("sold").Set(bigIntToFloat(stats.CreditSold))
 		gaugeCredit.WithLabelValues("committed").Set(bigIntToFloat(stats.CreditCommitted))
