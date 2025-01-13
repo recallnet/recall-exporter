@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/hokunet/hoku-exporter/contracts/credit"
+	"github.com/hokunet/hoku-exporter/contracts/blobs"
 	"github.com/hokunet/hoku-exporter/contracts/erc20"
 	"github.com/hokunet/hoku-exporter/contracts/gateway"
 	"github.com/hokunet/hoku-exporter/contracts/subnet"
@@ -62,7 +62,7 @@ func (e *Endpoint) ConstLabels(keyVal ...string) prometheus.Labels {
 type SubnetEndpoint struct {
 	*Endpoint
 	GatewayCaller *gateway.GatewayCaller
-	CreditCaller  *credit.CreditCaller
+	BlobsCaller   *blobs.BlobsCaller
 }
 
 func newSubnetEndpoint(ctx *cli.Context) (*SubnetEndpoint, error) {
@@ -82,9 +82,9 @@ func newSubnetEndpoint(ctx *cli.Context) (*SubnetEndpoint, error) {
 		return nil, fmt.Errorf("failed to create subnet gateway caller: %w", err)
 	}
 
-	creditAddress := ctx.String(FLAG_SUBNET_CREDIT_CONTRACT_ADDRESS)
-	if creditAddress != "" {
-		subnetEp.CreditCaller, err = credit.NewCreditCaller(common.HexToAddress(creditAddress), ep.Client)
+	blobManagerAddress := ctx.String(FLAG_SUBNET_BLOB_MANAGER_CONTRACT_ADDRESS)
+	if blobManagerAddress != "" {
+		subnetEp.BlobsCaller, err = blobs.NewBlobsCaller(common.HexToAddress(blobManagerAddress), ep.Client)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create credit caller: %w", err)
 		}

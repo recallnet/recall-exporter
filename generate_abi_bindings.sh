@@ -25,4 +25,4 @@ compile_abi ./contracts/subnet/SubnetActorGetterFacet.sol:SubnetActorGetterFacet
 compile_abi ./lib/murky/lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol:ERC20 erc20
 
 contract_dir=hoku-contracts
-compile_abi ./src/Credit.sol:Credit credit
+compile_abi ./src/wrappers/BlobManager.sol:BlobManager blobs

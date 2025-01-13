@@ -1,0 +1,620 @@
+[
+  {
+    "type": "function",
+    "name": "addBlob",
+    "inputs": [
+      {
+        "name": "params",
+        "type": "tuple",
+        "internalType": "struct AddBlobParams",
+        "components": [
+          {
+            "name": "sponsor",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "source",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "blobHash",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "metadataHash",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "subscriptionId",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "size",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "ttl",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "deleteBlob",
+    "inputs": [
+      {
+        "name": "subscriber",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "blobHash",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "subscriptionId",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "getAddedBlobs",
+    "inputs": [
+      {
+        "name": "size",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "blobs",
+        "type": "tuple[]",
+        "internalType": "struct BlobTuple[]",
+        "components": [
+          {
+            "name": "blobHash",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "sourceInfo",
+            "type": "tuple[]",
+            "internalType": "struct BlobSourceInfo[]",
+            "components": [
+              {
+                "name": "subscriber",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "subscriptionId",
+                "type": "string",
+                "internalType": "string"
+              },
+              {
+                "name": "source",
+                "type": "string",
+                "internalType": "string"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getBlob",
+    "inputs": [
+      {
+        "name": "blobHash",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "blob",
+        "type": "tuple",
+        "internalType": "struct Blob",
+        "components": [
+          {
+            "name": "size",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "metadataHash",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "subscribers",
+            "type": "tuple[]",
+            "internalType": "struct Subscriber[]",
+            "components": [
+              {
+                "name": "subscriber",
+                "type": "string",
+                "internalType": "string"
+              },
+              {
+                "name": "subscriptionGroup",
+                "type": "tuple[]",
+                "internalType": "struct SubscriptionGroup[]",
+                "components": [
+                  {
+                    "name": "subscriptionId",
+                    "type": "string",
+                    "internalType": "string"
+                  },
+                  {
+                    "name": "subscription",
+                    "type": "tuple",
+                    "internalType": "struct Subscription",
+                    "components": [
+                      {
+                        "name": "added",
+                        "type": "uint64",
+                        "internalType": "uint64"
+                      },
+                      {
+                        "name": "expiry",
+                        "type": "uint64",
+                        "internalType": "uint64"
+                      },
+                      {
+                        "name": "source",
+                        "type": "string",
+                        "internalType": "string"
+                      },
+                      {
+                        "name": "delegate",
+                        "type": "address",
+                        "internalType": "address"
+                      },
+                      {
+                        "name": "failed",
+                        "type": "bool",
+                        "internalType": "bool"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "status",
+            "type": "uint8",
+            "internalType": "enum BlobStatus"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getBlobStatus",
+    "inputs": [
+      {
+        "name": "subscriber",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "blobHash",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "subscriptionId",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "status",
+        "type": "uint8",
+        "internalType": "enum BlobStatus"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPendingBlobs",
+    "inputs": [
+      {
+        "name": "size",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "blobs",
+        "type": "tuple[]",
+        "internalType": "struct BlobTuple[]",
+        "components": [
+          {
+            "name": "blobHash",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "sourceInfo",
+            "type": "tuple[]",
+            "internalType": "struct BlobSourceInfo[]",
+            "components": [
+              {
+                "name": "subscriber",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "subscriptionId",
+                "type": "string",
+                "internalType": "string"
+              },
+              {
+                "name": "source",
+                "type": "string",
+                "internalType": "string"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPendingBlobsCount",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPendingBytesCount",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getStorageStats",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "stats",
+        "type": "tuple",
+        "internalType": "struct StorageStats",
+        "components": [
+          {
+            "name": "capacityFree",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "capacityUsed",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "numBlobs",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "numResolving",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "numAccounts",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "bytesResolving",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "numAdded",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "bytesAdded",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getStorageUsage",
+    "inputs": [
+      {
+        "name": "addr",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getSubnetStats",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "stats",
+        "type": "tuple",
+        "internalType": "struct SubnetStats",
+        "components": [
+          {
+            "name": "balance",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "capacityFree",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "capacityUsed",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "creditSold",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "creditCommitted",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "creditDebited",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "tokenCreditRate",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "numAccounts",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "numBlobs",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "numAdded",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "bytesAdded",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "numResolving",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "bytesResolving",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "overwriteBlob",
+    "inputs": [
+      {
+        "name": "oldHash",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "params",
+        "type": "tuple",
+        "internalType": "struct AddBlobParams",
+        "components": [
+          {
+            "name": "sponsor",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "source",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "blobHash",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "metadataHash",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "subscriptionId",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "size",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "ttl",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "AddBlob",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "sponsor",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "blobHash",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      },
+      {
+        "name": "subscriptionId",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "DeleteBlob",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "subscriber",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "blobHash",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      },
+      {
+        "name": "subscriptionId",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "OverwriteBlob",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "oldHash",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      },
+      {
+        "name": "newHash",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      },
+      {
+        "name": "subscriptionId",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      }
+    ],
+    "anonymous": false
+  }
+]

@@ -199,6 +199,42 @@
                 "internalType": "bytes"
               }
             ]
+          },
+          {
+            "name": "activity",
+            "type": "tuple",
+            "internalType": "struct CompressedActivityRollup",
+            "components": [
+              {
+                "name": "consensus",
+                "type": "tuple",
+                "internalType": "struct Consensus.CompressedSummary",
+                "components": [
+                  {
+                    "name": "stats",
+                    "type": "tuple",
+                    "internalType": "struct Consensus.AggregatedStats",
+                    "components": [
+                      {
+                        "name": "totalActiveValidators",
+                        "type": "uint64",
+                        "internalType": "uint64"
+                      },
+                      {
+                        "name": "totalNumBlocksCommitted",
+                        "type": "uint64",
+                        "internalType": "uint64"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "dataRootCommitment",
+                    "type": "bytes32",
+                    "internalType": "Consensus.MerkleHash"
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -453,6 +489,19 @@
   },
   {
     "type": "function",
+    "name": "getActiveValidators",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[]",
+        "internalType": "address[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "getActiveValidatorsNumber",
     "inputs": [],
     "outputs": [
@@ -634,6 +683,19 @@
             "internalType": "bytes"
           }
         ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getWaitingValidators",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[]",
+        "internalType": "address[]"
       }
     ],
     "stateMutability": "view"
