@@ -1,4 +1,4 @@
-module github.com/hokunet/hoku-exporter
+module github.com/recallnet/recall-exporter
 
 go 1.22.6
 

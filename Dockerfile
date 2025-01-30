@@ -8,6 +8,6 @@ RUN go build -ldflags "-X main.GitCommit=${GIT_COMMIT_SHA} -X main.BuildTime=$(d
 
 FROM alpine
 
-COPY --from=builder /go/hoku-exporter /bin/
+COPY --from=builder /go/recall-exporter /bin/
 
-CMD ["hoku-exporter", "run"]
+CMD ["recall-exporter", "run"]

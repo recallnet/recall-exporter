@@ -44,7 +44,7 @@ func main() {
 		Commands: []*cli.Command{
 			{
 				Name:   "run",
-				Usage:  "Run hoku-exporter",
+				Usage:  "Run recall-exporter",
 				Action: commandRun,
 				Flags: []cli.Flag{
 					&cli.StringFlag{
@@ -159,7 +159,7 @@ func main() {
 }
 
 func commandRun(ctx *cli.Context) error {
-	slog.Info("running hoku-exporter", "git-commit", GitCommit, "build-time", BuildTime)
+	slog.Info("running recall-exporter", "git-commit", GitCommit, "build-time", BuildTime)
 
 	subnetEP, err := newSubnetEndpoint(ctx)
 	if err != nil {

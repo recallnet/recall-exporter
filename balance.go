@@ -20,7 +20,7 @@ const (
 
 func newBalanceCheckerJob(ep *Endpoint, addressOwner string, addressToCheck common.Address) JobFunc {
 	gaugeBalance := promauto.NewGauge(prometheus.GaugeOpts{
-		Namespace: PROM_NAMESPACE_HOKU,
+		Namespace: PROM_NAMESPACE_RECALL,
 		Name:      "balance",
 		ConstLabels: ep.ConstLabels(
 			PROM_LABEL_ADDRESS_OWNER, addressOwner,
@@ -44,7 +44,7 @@ func newBalanceCheckerJob(ep *Endpoint, addressOwner string, addressToCheck comm
 
 func newErc20TokenBalanceCheckerJob(ep *ParentChainEndpoint, addressOwner string, addressToCheck common.Address) JobFunc {
 	gaugeBalance := promauto.NewGauge(prometheus.GaugeOpts{
-		Namespace: PROM_NAMESPACE_HOKU,
+		Namespace: PROM_NAMESPACE_RECALL,
 		Name:      "balance",
 		ConstLabels: ep.ConstLabels(
 			PROM_LABEL_ADDRESS_OWNER, addressOwner,
