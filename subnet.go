@@ -12,7 +12,7 @@ import (
 
 func newMembershipChecker(ep *SubnetEndpoint) JobFunc {
 	gaugeMember := promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace:   PROM_NAMESPACE_HOKU,
+		Namespace:   PROM_NAMESPACE_RECALL,
 		Name:        "validator_weight",
 		ConstLabels: ep.ConstLabels(),
 	}, []string{PROM_LABEL_ADDRESS})
@@ -68,37 +68,37 @@ func bigIntToFloat(b *big.Int) float64 {
 
 func newSubnetStatsChecker(ep *SubnetEndpoint) JobFunc {
 	gaugeCapacity := promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace:   PROM_NAMESPACE_HOKU,
+		Namespace:   PROM_NAMESPACE_RECALL,
 		Name:        "subnet_stats_capacity",
 		ConstLabels: ep.ConstLabels(),
 	}, []string{PROM_LABEL_TYPE})
 	gaugeCredit := promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace:   PROM_NAMESPACE_HOKU,
+		Namespace:   PROM_NAMESPACE_RECALL,
 		Name:        "subnet_stats_credit",
 		ConstLabels: ep.ConstLabels(),
 	}, []string{PROM_LABEL_TYPE})
 	gaugeBalance := promauto.NewGauge(prometheus.GaugeOpts{
-		Namespace:   PROM_NAMESPACE_HOKU,
+		Namespace:   PROM_NAMESPACE_RECALL,
 		Name:        "subnet_stats_balance",
 		ConstLabels: ep.ConstLabels(),
 	})
 	gaugeAccounts := promauto.NewGauge(prometheus.GaugeOpts{
-		Namespace:   PROM_NAMESPACE_HOKU,
+		Namespace:   PROM_NAMESPACE_RECALL,
 		Name:        "subnet_stats_accounts",
 		ConstLabels: ep.ConstLabels(),
 	})
 	gaugeBlobs := promauto.NewGauge(prometheus.GaugeOpts{
-		Namespace:   PROM_NAMESPACE_HOKU,
+		Namespace:   PROM_NAMESPACE_RECALL,
 		Name:        "subnet_stats_blobs",
 		ConstLabels: ep.ConstLabels(),
 	})
 	gaugeResolving := promauto.NewGauge(prometheus.GaugeOpts{
-		Namespace:   PROM_NAMESPACE_HOKU,
+		Namespace:   PROM_NAMESPACE_RECALL,
 		Name:        "subnet_stats_resolving",
 		ConstLabels: ep.ConstLabels(),
 	})
 	gaugeTokenCreditRate := promauto.NewGauge(prometheus.GaugeOpts{
-		Namespace:   PROM_NAMESPACE_HOKU,
+		Namespace:   PROM_NAMESPACE_RECALL,
 		Name:        "subnet_stats_token_credit_rate",
 		ConstLabels: ep.ConstLabels(),
 	})

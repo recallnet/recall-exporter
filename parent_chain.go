@@ -12,7 +12,7 @@ import (
 
 func newBottomupCheckpointChecker(ep *ParentChainEndpoint) JobFunc {
 	checkpointHeight := promauto.NewGauge(prometheus.GaugeOpts{
-		Namespace:   PROM_NAMESPACE_HOKU,
+		Namespace:   PROM_NAMESPACE_RECALL,
 		Name:        "last_bottomup_checkpoint_height",
 		ConstLabels: ep.ConstLabels(),
 	})
@@ -52,12 +52,12 @@ func NewCollateralChecker(ep *ParentChainEndpoint) *CollateralChecker {
 		currentSubnetValidatorAddresses: map[common.Address]int{},
 
 		gaugeValidatorCollateral: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace:   PROM_NAMESPACE_HOKU,
+			Namespace:   PROM_NAMESPACE_RECALL,
 			Name:        "validator_collateral",
 			ConstLabels: ep.ConstLabels(),
 		}, []string{PROM_LABEL_ADDRESS}),
 		gaugeTotalCollateral: promauto.NewGauge(prometheus.GaugeOpts{
-			Namespace:   PROM_NAMESPACE_HOKU,
+			Namespace:   PROM_NAMESPACE_RECALL,
 			Name:        "collateral_confirmed_total",
 			Help:        "Total amount of confirmed collateral across all validators.",
 			ConstLabels: ep.ConstLabels(),

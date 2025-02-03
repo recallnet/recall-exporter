@@ -1,8 +1,8 @@
-# hoku-exporter
+# recall-exporter
 
-`hoku-exporter` is a service that exports metrics about
-* hoku validator node,
-* hoku network.
+`recall-exporter` is a service that exports metrics about
+* recall validator node,
+* recall network.
 
 ## ABI Wrapper Code Generation
 
