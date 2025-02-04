@@ -153,8 +153,8 @@
             "components": [
               {
                 "name": "subscriber",
-                "type": "string",
-                "internalType": "string"
+                "type": "address",
+                "internalType": "address"
               },
               {
                 "name": "subscriptionGroup",
