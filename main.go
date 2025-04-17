@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -161,17 +162,13 @@ func main() {
 func commandRun(ctx *cli.Context) error {
 	slog.Info("running recall-exporter", "git-commit", GitCommit, "build-time", BuildTime)
 
-	subnetEP, err := newSubnetEndpoint(ctx)
-	if err != nil {
-		return err
-	}
+	go tryToStartSubnetJobs(ctx)
 
 	parentChainEP, err := newParentChainEndpoint(ctx)
 	if err != nil {
 		return err
 	}
 
-	startSubnetJobs(subnetEP, ctx)
 	startParentChainJobs(parentChainEP, ctx)
 
 	metricsAddress := ctx.String(FLAG_METRICS_ADDRESS)
@@ -181,6 +178,41 @@ func commandRun(ctx *cli.Context) error {
 
 	http.Handle(metricsPath, promhttp.Handler())
 	return http.ListenAndServe(metricsAddress, nil)
+}
+
+func tryToStartSubnetJobs(ctx *cli.Context) {
+	var subnetEP *SubnetEndpoint
+	var err error
+	const retryCount = 3
+	endpointNotAvailableRetryCounter := retryCount
+	log := slog.With("task", "connectToSubnetEVM")
+	log.Info("starting")
+	for {
+		subnetEP, err = newSubnetEndpoint(ctx)
+		if err == nil {
+			log.Info("connected to subnet EVM endpoint")
+			break
+		}
+
+		if strings.Contains(err.Error(), "dial tcp") {
+			if endpointNotAvailableRetryCounter == 0 {
+				log.Error("failed to connect to subnet EVM endpoint", "totalRetries", retryCount, "error", err)
+				os.Exit(1)
+			}
+			endpointNotAvailableRetryCounter--
+		}
+
+		if strings.Contains(err.Error(), "exit code: 54") {
+			log.Info("node is not yet in sync")
+		} else {
+			log.Warn("failed to connect to subnet EVM endpoint", "error", err)
+		}
+
+		log.Info("sleeping for 10 seconds")
+		time.Sleep(10 * time.Second)
+	}
+
+	startSubnetJobs(subnetEP, ctx)
 }
 
 func setupLogging() {
