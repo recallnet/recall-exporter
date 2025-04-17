@@ -37,7 +37,7 @@ func StartJob(jobName, network string, job JobFunc, interval time.Duration) {
 	jobWrapper := func() (err error) {
 		defer func() {
 			if r := recover(); r != nil {
-				logger.Error("panic", "reason", r, "stack", debug.Stack())
+				logger.Error("panic", "reason", r, "stack", string(debug.Stack()))
 				err = fmt.Errorf("panic: %v", r)
 			}
 		}()
