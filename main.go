@@ -9,6 +9,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/lmittmann/tint"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v2"
 )
@@ -183,10 +185,21 @@ func tryToStartSubnetJobs(ctx *cli.Context) {
 	var subnetEP *SubnetEndpoint
 	var err error
 	const retryCount = 3
+
+	gaugeStatus := promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: PROM_NAMESPACE_RECALL,
+		Help:      "Not 0 if recall-exporter is connected to EVM RPC",
+		Name:      "status_connected_to_subnet_evm",
+	})
+
 	endpointNotAvailableRetryCounter := retryCount
 	log := slog.With("task", "connectToSubnetEVM")
-	log.Info("starting")
+	log.Info("start")
+	gaugeStatus.Set(0)
+
 	defer log.Info("done")
+	defer gaugeStatus.Inc()
+
 	for {
 		subnetEP, err = newSubnetEndpoint(ctx)
 		if err == nil {
