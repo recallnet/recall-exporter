@@ -162,14 +162,13 @@ func main() {
 func commandRun(ctx *cli.Context) error {
 	slog.Info("running recall-exporter", "git-commit", GitCommit, "build-time", BuildTime)
 
-	go tryToStartSubnetJobs(ctx)
-
 	parentChainEP, err := newParentChainEndpoint(ctx)
 	if err != nil {
 		return err
 	}
 
 	startParentChainJobs(parentChainEP, ctx)
+	go tryToStartSubnetJobs(ctx)
 
 	metricsAddress := ctx.String(FLAG_METRICS_ADDRESS)
 	metricsPath := ctx.String(FLAG_METRICS_PATH)
@@ -187,10 +186,10 @@ func tryToStartSubnetJobs(ctx *cli.Context) {
 	endpointNotAvailableRetryCounter := retryCount
 	log := slog.With("task", "connectToSubnetEVM")
 	log.Info("starting")
+	defer log.Info("done")
 	for {
 		subnetEP, err = newSubnetEndpoint(ctx)
 		if err == nil {
-			log.Info("connected to subnet EVM endpoint")
 			break
 		}
 
@@ -203,7 +202,7 @@ func tryToStartSubnetJobs(ctx *cli.Context) {
 		}
 
 		if strings.Contains(err.Error(), "exit code: 54") {
-			log.Info("node is not yet in sync")
+			log.Info("node is not in sync yet")
 		} else {
 			log.Warn("failed to connect to subnet EVM endpoint", "error", err)
 		}
