@@ -4,10 +4,13 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/lmittmann/tint"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v2"
 )
@@ -161,18 +164,13 @@ func main() {
 func commandRun(ctx *cli.Context) error {
 	slog.Info("running recall-exporter", "git-commit", GitCommit, "build-time", BuildTime)
 
-	subnetEP, err := newSubnetEndpoint(ctx)
-	if err != nil {
-		return err
-	}
-
 	parentChainEP, err := newParentChainEndpoint(ctx)
 	if err != nil {
 		return err
 	}
 
-	startSubnetJobs(subnetEP, ctx)
 	startParentChainJobs(parentChainEP, ctx)
+	go tryToStartSubnetJobs(ctx)
 
 	metricsAddress := ctx.String(FLAG_METRICS_ADDRESS)
 	metricsPath := ctx.String(FLAG_METRICS_PATH)
@@ -181,6 +179,52 @@ func commandRun(ctx *cli.Context) error {
 
 	http.Handle(metricsPath, promhttp.Handler())
 	return http.ListenAndServe(metricsAddress, nil)
+}
+
+func tryToStartSubnetJobs(ctx *cli.Context) {
+	var subnetEP *SubnetEndpoint
+	var err error
+	const retryCount = 3
+
+	gaugeStatus := promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: PROM_NAMESPACE_RECALL,
+		Help:      "Not 0 if recall-exporter is connected to EVM RPC",
+		Name:      "status_connected_to_subnet_evm",
+	})
+
+	endpointNotAvailableRetryCounter := retryCount
+	log := slog.With("task", "connectToSubnetEVM")
+	log.Info("start")
+	gaugeStatus.Set(0)
+
+	defer log.Info("done")
+	defer gaugeStatus.Inc()
+
+	for {
+		subnetEP, err = newSubnetEndpoint(ctx)
+		if err == nil {
+			break
+		}
+
+		if strings.Contains(err.Error(), "dial tcp") {
+			if endpointNotAvailableRetryCounter == 0 {
+				log.Error("failed to connect to subnet EVM endpoint", "totalRetries", retryCount, "error", err)
+				os.Exit(1)
+			}
+			endpointNotAvailableRetryCounter--
+		}
+
+		if strings.Contains(err.Error(), "exit code: 54") {
+			log.Info("node is not in sync yet")
+		} else {
+			log.Warn("failed to connect to subnet EVM endpoint", "error", err)
+		}
+
+		log.Info("sleeping for 10 seconds")
+		time.Sleep(10 * time.Second)
+	}
+
+	startSubnetJobs(subnetEP, ctx)
 }
 
 func setupLogging() {
